@@ -1,0 +1,521 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="Content-Type">
+  <title>pp_titanbrowse installation and use</title>
+  <meta content="Paulo Penteado (pp.penteado@gmail.com)" name="author">
+  <meta
+ content="Provisional information for installation and use of pp_titanbrowse"
+ name="description">
+</head>
+<body>
+<br>
+<h1>titanbrowse<br>
+</h1>
+titanbrowse is a complete reimplementation of titan_browse, a
+database and visualizer for Cassini VIMS observations of Titan. This
+documentation is still under construction, as is titanbrowse. Since
+the principle is the same as the previous version, this document only
+describes the differences. For more details on how to make queries to
+the database, see <a href="titan_browse.html">titan_browse's
+documentation</a>.<br>
+<br>
+titanbrowse was written from scratch, around similar functionality
+as that provided by titan_browse, but with additional features, more
+data, and more efficient implementation. Most of the many differences
+are internal to the database, and do not show in the graphical
+interface (pp_titanbrowse_gui). The GUI is similar enough to make it
+easy to infer how to use it. In addition to the GUI, now there is an
+API (pp_titanbrowse, which is used by pp_titanbrowse_gui) to the
+database, which allows access to the same data, and the same query
+capabilities, from the command line or from other programs. Most of the
+documentation that still needs to be made is for the API, since the GUI
+is easy to interpret.<br>
+<br>
+One major improvement from titan_browse is that now the data files
+contain all the data of every VIMS cube of Titan of the
+time period they cover. This allows any band or backplane to be used in
+pp_titanbrowse for selection or visualization, as well as examining
+images of bands and plots of spectra, and obtaining selected spectra or
+cubes directly from pp_titanbrowse, without the need for any other data
+files or libraries.<br>
+<br>
+The cubes contained in the database have much more information than
+either the PDS cubes or those from the VIMS pipeline. For each pixel,
+the coordinates are calculated at the center and at each corner of the
+pixel, which is necessary for proper use of large pixels, pixels near
+the limb, and cubes with small number of pixels across one of their
+dimensions. Also, the geometric data is not limited to those pixels
+that intercept the surface (as is the case with cubes processed with
+ISIS, such as those from the VIMS pipeline).&nbsp;For pixels that do
+not intercept the surface, the calculated geometric data refers to the
+point where the line of sight gets nearest to the surface (for now,
+assumed spherical, in the lack of better shape determinations). The
+minimum altitudes of the lines of sight are also provided. Other
+additional information are the locations of the Sun, observer and
+specular point, and distances from the pixels to the specular point.
+These are all in backplanes, which currently are 52.<br>
+<br>
+The data that at first sight does not seem to depend on pixel position
+(such as specular point coordinates) is provided for each pixel,
+because they were calculated at the middle of the exposure time of that
+pixel. Remember that VIMS does not obtain all the pixels in a cube at
+the same time (except for the very particular and rare case of a single
+line VIS cube). This is most relevant near closest approach, or during
+fast attitude changes, when the pixel directions can change
+considerably between the time one pixel was taken to the time of the
+next pixel. See the Data description section below for more details.<br>
+<br>
+<h3>Update (20100920):</h3>
+Improvements to the GUI, including: added the option to only plot on
+the map the pixels that fall on the surface, fixed the orthographic and
+perspective projections, and added latitude, longitude and altitude for
+the cursor position on the cube viewer.<br>
+<h3>Update (20100806):</h3>
+<ol>
+  <li>New datafiles (up to covims_0036): The standard ISIS backplanes
+should be avoided, as I still need to change ISIS to make it use the
+new kernels properly. This does not affect the other backplanes (those
+that only the cubes I prepare have). So, for instance, to use the
+coordinates of the pixel center it is preferable to use the backplanes
+LAT_0 and LON_0, instead of LATITUDE and LONGITUDE. Also, I recommend
+not overwriting the old datafiles you have, as sometimes the new sets
+of kernels cause worse pointing errors for some periods. This is a
+difficult issue to deal with, and has been a problem for all the
+Cassini data.<br>
+  </li>
+  <li>A new program, <a href="./pp_titanbrowse_datacompress.html">pp_titanbrowse_datacompress</a>,
+can
+be
+used to decompress (and to compress, of course) the datafiles.
+They are provided compressed, for faster download, and can be used in
+that way. But if one desires to trade processor load by disk use, they
+can be decompressed with the above routine.</li>
+  <li>In addition to the converter above, the _db files can be
+generated already uncompressed, with the new keyword (compress=0).<br>
+  </li>
+  <li>There were several bug fixes, both the the database and the GUI,
+over the last few months, so the code should be replaced with the
+current version.</li>
+  <li>Soon to come, there will be a new, more intuitive array-like
+syntax to use in the functions for cube/pixel selection and plot. This
+will allow to use operations on bands as in regular array indexing.
+These new features will require the use of IDL 8 (which is already
+available, since July/22).<br>
+  </li>
+</ol>
+<h2>Documentation</h2>
+The documentation of each routine used by titanbrowse is linked on the
+frame on the left. In addition, the documentation of the previous
+version, <a href="titan_browse.html">titan_browse</a>, may also be
+useful in understanding how to make cube and pixel selections.<br>
+<br>
+<h2>Installation<br>
+</h2>
+The requirements for pp_titanbrowse are IDL, plus, for
+pp_titanbrowse_gui, David Fanning's Catalyst and Coyote libraries. If
+you do not already have those libraries installed, instructions are at <a
+ href="http://www.dfanning.com/catalyst/howtoinstall.html">http://www.dfanning.com/catalyst/howtoinstall.html</a>.<br>
+<br>
+<h3>Database files</h3>
+The files used by the database are divided in (at the time of this
+writing) 29 sets, from the corresponding PDS datasets from which the
+data was obtained. All the VIMS data came from the <a
+ href="http://pds-imaging.jpl.nasa.gov/Admin/resources/cd_cassini_vims.html">PDS
+Imaging
+Node</a>, and all the SPICE data used in the processing came
+from the <a href="http://naif.jpl.nasa.gov/naif/data_archived.html">PDS
+Archive
+for
+SPICE
+data</a>. All data and information used to make both
+the software and the database files is publicly available, from either <a
+ href="http://pds.nasa.gov/">PDS</a>, <a
+ href="http://naif.jpl.nasa.gov/naif/">NAIF</a>, <a
+ href="http://isis.astrogeology.usgs.gov/">USGS</a>, or <a
+ href="http://ciclops.org/">CICLOPS</a>. The only exception is the VIMS
+background map, from <a
+ href="http://dx.doi.org/10.1016/j.pss.2009.04.013">Barnes et al. 2009</a>,
+which
+was
+provided
+by Jason Barnes.<br>
+<br>
+Each set takes two files per VIMS channel, for instance,
+covims_0004_ir.sav and covims_0004_ir_db.sav, for the COVIMS_0004 set
+of IR data. The examples below all use file names for IR channel data.
+The current 58 files for the IR channel take 11GB. However, it is only
+necessary to download the *_ir.sav files, since pp_titanbrowse can be
+used to generate the corresponding *ir_db.sav files. This reduces the
+download size to (currently) 7.6GB.<br>
+<br>
+The separate files are at&nbsp;<a
+ href="http://ppenteado.net/vims/pp_titanbrowse/sav/">http://ppenteado.net/vims/pp_titanbrowse/sav/</a>,
+but
+to
+make
+the
+download
+easier, the *_ir.sav files are packed into 4
+tar files, at <a href="http://ppenteado.net/vims/pp_titanbrowse/sav/tar/">http://ppenteado.net/vims/pp_titanbrowse/sav/tar/</a>.
+This
+server
+does
+not
+accept
+anonymous connections, so write to pp.penteado@gmail.com to request a password.
+<br>
+<h4>Generating the _db files</h4>
+If you opted to download only the *ir.sav files, the *ir_db.sav files
+will have to be generated before pp_titanbrowse can be used. This may
+take a long time (many minutes to a few hours, if all files are
+present), but it may be faster than downloading them. In case you are
+wondering, this is actually relatively light work, just done on a lot
+of data. The heavy work was done when the *ir.sav files were created
+from the raw PDS cubes, which currently takes over a week to process.<br>
+<br>
+From an IDL session in the directory containing those files, first
+create an array with all the *ir.sav files, for instance, with<br>
+<br>
+<pre>IDL&gt; files=file_search('covims_*_ir.sav',count=nfiles)</pre>
+<pre>IDL&gt; print,files</pre>
+<pre>covims_0014_ir.sav covims_0029_ir.sav covims_0032_ir.sav</pre>
+<br>
+Then loop over the files, to create each _db.sav file, with<br>
+<br>
+<pre>IDL&gt; for i=0,nfiles-1 do begin &amp; a=obj_new('pp_titanbrowse_db',files[i],/build) &amp; obj_destroy,a &amp; endfor</pre>
+<pre>Building db file, this may take a long time and use a lot of memory if there are many cubes</pre>
+<pre>Processing cube 1/498</pre>
+<pre>Processing cube 2/498</pre>
+<pre>(...)<br><br></pre>
+Once that is finished, you are ready to start using pp_titanbrowse.
+Obviously, the db files only have to be built once. If you want the
+files to be stored uncompressed, use the keyword (compress=0) on the
+obj_new() call.<br>
+<br>
+<h3>Source and documentation files<span
+ style="text-decoration: underline;"></span></h3>
+There is a <a
+ href="http://www.ppenteado.net/vims/pp_titanbrowse/pp_titanbrowse.tar.gz">compressed
+tar
+file</a> containing all the source and documentation files. The
+documentation files can also be found at the links given below.<br>
+<br>
+Once the tar file is downloaded, you need only to extract its contents
+somewhere (all files it contains are under a pp_titanbrowse) directory,
+and add the path to the directory pp_titanbrowse/source to your IDL
+path. Since it is the same that would be done to install Catalyst or
+Coyote, see their <a
+ href="http://www.dfanning.com/catalyst/howtoinstall.html">installation
+instructions</a> if you need more information on how to add a directory
+to IDL's path.<br>
+<br>
+<br>
+<div style="text-align: justify;">
+<h2>Use of pp_titanbrowse</h2>
+To start using the GUI, from the directory where the database files are
+located, simply create a pp_titanbrowse_gui object in your IDL session,
+as in<br>
+<br>
+<pre>IDL&gt; a=obj_new('pp_titanbrowse_gui')<br><br></pre>
+For the IR channel, which is the default. If you have the VIS channel
+files, then use<br>
+<br>
+<pre>IDL&gt; a=obj_new('pp_titanbrowse_gui',/vis)</pre>
+<br>
+It will search for all the database files in the current directory, and
+load them all into the database. <span style="font-family: monospace;"></span>The
+time
+it
+will
+take
+to
+start depends on how many files are present.
+Contrary to titan_browse, this will already have all the data directly
+available, with no need to manually select subsets to be loaded or
+unloaded. But despite this &nbsp;(and the much larger amount of data
+that pp_titanbrowse can handle), its initialization is much faster than
+that of titan_browse, and it uses far less memory.<br>
+<br>
+Once you see the graphical interface, it should be ready to use. It is
+divided into 5 tabs:<br>
+<br>
+<h3>Main tab</h3>
+This is used to browse through the flyby hierarchy (in the tree on the
+left side), to find specific cubes. If a cube is selected on the tree,
+its main information is shown in the right side. Double-clicking a cube
+on the tree has 3 effects:<br>
+<br>
+<ol>
+  <li>Send the cube pixel locations to be plotted on the Map tab,</li>
+  <li>replace the text of the cube selection function (in the Cube
+selection tab) by a function that will select only that cube, and</li>
+  <li>send the cube data to be used by the Cube tab</li>
+</ol>
+<br>
+On the bottom right side of this tab, the displayed cube information
+can be exported to either&nbsp;a text file, or to a variable in the
+current IDL session, as a structure of type pp_titanbrowse_cubeinfo,
+such as:<br>
+<br>
+<pre>** Structure PP_TITANBROWSE_CUBEINFO, 20 tags, length=1040, data length=1040:</pre>
+<pre>&nbsp;&nbsp; REV&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; '093TI'</pre>
+<pre>&nbsp;&nbsp; SEQ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; 'S45'</pre>
+<pre>&nbsp;&nbsp; SEQ_TITLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; 'VIMS_093TI_GLOBMAP001_CIRS'</pre>
+<pre>&nbsp;&nbsp; PROD_ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; '1_1605808125.14960'</pre>
+<pre>&nbsp;&nbsp; START&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; '2008-324T17:09:20.747Z'</pre>
+<pre>&nbsp;&nbsp; STOP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; '2008-324T17:20:43.821Z'</pre>
+<pre>&nbsp;&nbsp; NAT_START&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; '&nbsp;&nbsp; 1.6058081e+09'</pre>
+<pre>&nbsp;&nbsp; LINES&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 24</pre>
+<pre>&nbsp;&nbsp; SAMPLES&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 64</pre>
+<pre>&nbsp;&nbsp; PIXELS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1536</pre>
+<pre>&nbsp;&nbsp; SURF_PIXELS&nbsp;&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1201</pre>
+<pre>&nbsp;&nbsp; EXPOSURE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 420.00000</pre>
+<pre>&nbsp;&nbsp; IR_MODE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; 'NORMAL'</pre>
+<pre>&nbsp;&nbsp; VIS_MODE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; 'NORMAL'</pre>
+<pre>&nbsp;&nbsp; BACK_MAX&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRUCT&nbsp;&nbsp;&nbsp; -&gt; PP_TITANBROWSE_CMD_BACK Array[1]</pre>
+<pre>&nbsp;&nbsp; BACK_MIN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRUCT&nbsp;&nbsp;&nbsp; -&gt; PP_TITANBROWSE_CMD_BACK Array[1]</pre>
+<pre>&nbsp;&nbsp; DBFILE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; 'covims_0032_ir.sav'</pre>
+<pre>&nbsp;&nbsp; CUBEFILE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; 'CM_1605808125_1_ir_eg.cub'</pre>
+<pre>&nbsp;&nbsp; DBIND&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2</pre>
+<pre>&nbsp;&nbsp; CUBEIND&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1</pre>
+<br>
+<h3>Map tab<br>
+</h3>
+This is used to map data onto Titan's surface, with varied map
+projections and background reference maps (other background options are
+yet to be implemented). The data plotted (chosen with the Display mode
+droplist) can be either the location of the currently selected cube's
+pixels (the cube must have been double-clicked, in the Main tab, for
+this), the location of the pixels in the pixel list (in the Pixel
+selection tab), or an image of the value of some arbitrary function of
+the pixels in the pixel list (this feature currently is not working
+properly). The pixel location droplist chooses whether the locations
+plotted are&nbsp;the standard center of the pixels that intercept the
+surface (the LATITUDE and LONGITUDE backplanes), or the location of the
+points on the surface that are nearest to the lines of sight of the
+corners of each pixel (the LAT_1, LAT_2, LAT_3, LAT_4, LON_1, LON_2,
+LON_3 and LON_4 backplanes). Note that, as in titan_browse, the lines
+in pixel center mode connect the pixel centers, they are not the pixel
+edges. The lines in pixel corner mode connect the pixel corners, so are
+a more precise representation of the pixel shape, but are slower to
+draw on the map. A bitmap of the currently shown map can be exported to
+a png, jpeg or ps file.<br>
+<h3>Cube selection tab</h3>
+This tab is used to select a cube from the database, following the same
+query principle as described in detail and exemplified in <a
+ href="titan_browse.html">titan_browse's documentation</a>. It is
+important to note that the variable names (those obtained selecting
+them in the tree) must be separated by whitespace from other elements
+in the function. For instance, "( cmd.exposure *2.) gt 10." is legal,
+but&nbsp;"(cmd.exposure*2.) gt 10." is not. This is because
+pp_titanbrowse must parse the function before giving it to IDL for
+evaluation, and the parser is still very simple.<br>
+<br>
+Note that by default the text output of the list is not updated (it is
+frozen), though the list is being updated, as indicated by the number
+of cubes selected displayed. The reason&nbsp;is that selections start
+from all cubes, which is typically a very large number, and making the
+text output can be slow in this situation. When the list is filtered
+down to a smaller number of elements, its display can be unfrozen, to
+start showing the current list.<br>
+<br>
+At the bottom,&nbsp; the cube list can be exported, as a text file, to
+a variable in the IDL session (an array of pp_editablecubes), or as the
+individual (original) cube files to a directory.<br>
+<br>
+<h3>Pixel selection tab<br>
+</h3>
+This tab works similarly to the Cube selection tab, but for selecting
+pixels of the currently selected cubes. Again, <a
+ href="titan_browse.html">titan_browse's documentation</a> explains how
+to make pixel selections. As the described above for cube selection,
+the variable names must always be separated by whitespace from the
+other elements in the expression.<br>
+<br>
+At the bottom, the pixel list can be exported, either as a text file,
+or as a variable to the IDL session. The variable will be an array of
+pp_titanbrowse_pixeldata, such as:<br>
+<br>
+<pre>IDL&gt; help,pixsel,/struct</pre>
+<pre>** Structure PP_TITANBROWSE_PIXDATA, 5 tags, length=2488, data length=2488:</pre>
+<pre>&nbsp;&nbsp; CORE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp; Array[256]</pre>
+<pre>&nbsp;&nbsp; BACKPLANES&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRUCT&nbsp;&nbsp;&nbsp; -&gt; PP_TITANBROWSE_CMD_BACK Array[1]</pre>
+<pre>&nbsp;&nbsp; CUBE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STRING&nbsp;&nbsp;&nbsp; 'CM_1605808125_1_ir_eg.cub'</pre>
+<pre>&nbsp;&nbsp; X&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0</pre>
+<pre>&nbsp;&nbsp; Z&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0</pre>
+<pre>IDL&gt; help,pixsel.backplanes,/struct</pre>
+<pre>** Structure PP_TITANBROWSE_CMD_BACK, 52 tags, length=416, data length=416:</pre>
+<pre>&nbsp;&nbsp; LATITUDE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NaN</pre>
+<pre>&nbsp;&nbsp; LONGITUDE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NaN</pre>
+<pre>&nbsp;&nbsp; SAMPLE_RESOLUTION</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NaN</pre>
+<pre>&nbsp;&nbsp; LINE_RESOLUTION DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NaN</pre>
+<pre>&nbsp;&nbsp; PHASE_ANGLE&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NaN</pre>
+<pre>&nbsp;&nbsp; INCIDENCE_ANGLE DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NaN</pre>
+<pre>&nbsp;&nbsp; EMISSION_ANGLE&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NaN</pre>
+<pre>&nbsp;&nbsp; NORTH_AZIMUTH&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NaN</pre>
+<pre>&nbsp;&nbsp; LAT_0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -38.839169</pre>
+<pre>&nbsp;&nbsp; LAT_1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -38.757030</pre>
+<pre>&nbsp;&nbsp; LAT_2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -38.933907</pre>
+<pre>&nbsp;&nbsp; LAT_3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -38.921597</pre>
+<pre>&nbsp;&nbsp; LAT_4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -38.743710</pre>
+<pre>&nbsp;&nbsp; LON_0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 160.40419</pre>
+<pre>&nbsp;&nbsp; LON_1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 160.49832</pre>
+<pre>&nbsp;&nbsp; LON_2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 160.23354</pre>
+<pre>&nbsp;&nbsp; LON_3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 160.30919</pre>
+<pre>&nbsp;&nbsp; LON_4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 160.57492</pre>
+<pre>&nbsp;&nbsp; ALT_0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 102.46656</pre>
+<pre>&nbsp;&nbsp; ALT_1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 110.09211</pre>
+<pre>&nbsp;&nbsp; ALT_2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 107.57780</pre>
+<pre>&nbsp;&nbsp; ALT_3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 94.850456</pre>
+<pre>&nbsp;&nbsp; ALT_4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 97.376961</pre>
+<pre>&nbsp;&nbsp; PHASE_0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 97.228409</pre>
+<pre>&nbsp;&nbsp; PHASE_1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 97.247437</pre>
+<pre>&nbsp;&nbsp; PHASE_2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 97.222069</pre>
+<pre>&nbsp;&nbsp; PHASE_3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 97.209389</pre>
+<pre>&nbsp;&nbsp; PHASE_4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 97.234756</pre>
+<pre>&nbsp;&nbsp; INCIDENCE_0&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 52.578320</pre>
+<pre>&nbsp;&nbsp; INCIDENCE_1&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 52.473488</pre>
+<pre>&nbsp;&nbsp; INCIDENCE_2&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 52.740810</pre>
+<pre>&nbsp;&nbsp; INCIDENCE_3&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 52.683792</pre>
+<pre>&nbsp;&nbsp; INCIDENCE_4&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 52.415230</pre>
+<pre>&nbsp;&nbsp; EMISSION_0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 89.999977</pre>
+<pre>&nbsp;&nbsp; EMISSION_1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 89.999977</pre>
+<pre>&nbsp;&nbsp; EMISSION_2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 89.999977</pre>
+<pre>&nbsp;&nbsp; EMISSION_3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 89.999977</pre>
+<pre>&nbsp;&nbsp; EMISSION_4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 89.999977</pre>
+<pre>&nbsp;&nbsp; AZ_DIF_0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 99.115982</pre>
+<pre>&nbsp;&nbsp; AZ_DIF_1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 99.152992</pre>
+<pre>&nbsp;&nbsp; AZ_DIF_2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 99.088104</pre>
+<pre>&nbsp;&nbsp; AZ_DIF_3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 99.079025</pre>
+<pre>&nbsp;&nbsp; AZ_DIF_4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 99.144127</pre>
+<pre>&nbsp;&nbsp; OBSERVER_DIST_0 DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 26201.770</pre>
+<pre>&nbsp;&nbsp; SPECULAR_DIST_0 DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 93.634842</pre>
+<pre>&nbsp;&nbsp; OT_DISTANCE&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 26338.215</pre>
+<pre>&nbsp;&nbsp; SOL_LAT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -3.9179378</pre>
+<pre>&nbsp;&nbsp; SOL_LON&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -156.21873</pre>
+<pre>&nbsp;&nbsp; SP_LAT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 19.903276</pre>
+<pre>&nbsp;&nbsp; SP_LON&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -197.25456</pre>
+<pre>&nbsp;&nbsp; OBS_LAT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 32.293877</pre>
+<pre>&nbsp;&nbsp; OBS_LON&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DOUBLE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 111.95390</pre>
+<br>
+<h3>Cube tab<br>
+</h3>
+<br>
+This tab is used to examine the contents of the cube selected (by
+double-clicking) on the Main tab. The image on the left side shows the
+band selected, and/or the selected backplane and a latitude/longitude
+grid. If the Plot spectrum button is enabled, a spectrum is plotted for
+every pixel clicked on the image. If a pixel is clicked with the right
+button, its spectrum is added to the plot, without erasing the previous
+spectra in the plot. Through this tab, the selected cube can be
+exported either to a variable in the IDL session (a pp_editablecube
+object), or to a cube file. Through the spectrum display window, when
+it is enabled, the spectra displayed can be exported to a variable in
+the IDL session as an array of simple anonymous structures such as:<br>
+<br>
+<pre>IDL&gt; help,spectrum,/structure<br>** Structure &lt;4034128&gt;, 2 tags, length=1448, data length=1444, refs=2:<br>   CUBE            OBJREF    &lt;ObjHeapVar8827(PP_EDITABLECUBE)&gt;<br>   PIXEL           STRUCT    -&gt; &lt;Anonymous&gt; Array[1]<br>IDL&gt; help,spectrum.pixel,/struct<br>** Structure &lt;349e7d8&gt;, 2 tags, length=1440, data length=1440, refs=2:<br>   CORE            FLOAT     Array[256]<br>   BACKPLANES      STRUCT    -&gt; &lt;Anonymous&gt; Array[1]<br>IDL&gt; help,spectrum.pixel.backplanes,/struct<br>** Structure &lt;349d1c8&gt;, 52 tags, length=416, data length=416, refs=2:<br>   LATITUDE        DOUBLE          -28.825367<br>   LONGITUDE       DOUBLE           228.76825<br>   SAMPLE_RESOLUTION<br>                   DOUBLE           14.329811<br>   LINE_RESOLUTION DOUBLE           45.343521<br>   PHASE_ANGLE     DOUBLE           96.036674<br>   INCIDENCE_ANGLE DOUBLE           72.675316<br>   EMISSION_ANGLE  DOUBLE           69.755333<br>   NORTH_AZIMUTH   DOUBLE           147.70184<br>   LAT_0           DOUBLE          -29.391121<br>   LAT_1           DOUBLE          -29.720751<br>   LAT_2           DOUBLE          -29.900677<br>   LAT_3           DOUBLE          -29.069536<br>   LAT_4           DOUBLE          -28.893679<br>   LON_0           DOUBLE           131.36201<br>   LON_1           DOUBLE           131.69547<br>   LON_2           DOUBLE           131.39299<br>   LON_3           DOUBLE           131.03439<br>   LON_4           DOUBLE           131.33582<br>   ALT_0           DOUBLE           0.0000000<br>   ALT_1           DOUBLE           0.0000000<br>   ALT_2           DOUBLE           0.0000000<br>   ALT_3           DOUBLE           0.0000000<br>   ALT_4           DOUBLE           0.0000000<br>   PHASE_0         DOUBLE           96.036530<br>   PHASE_1         DOUBLE           96.055527<br>   PHASE_2         DOUBLE           96.030121<br>   PHASE_3         DOUBLE           96.017532<br>   PHASE_4         DOUBLE           96.042938<br>   INCIDENCE_0     DOUBLE           72.676826<br>   INCIDENCE_1     DOUBLE           72.419731<br>   INCIDENCE_2     DOUBLE           72.698463<br>   INCIDENCE_3     DOUBLE           72.932205<br>   INCIDENCE_4     DOUBLE           72.653809<br>   EMISSION_0      DOUBLE           69.756859<br>   EMISSION_1      DOUBLE           70.175568<br>   EMISSION_2      DOUBLE           70.263412<br>   EMISSION_3      DOUBLE           69.347862<br>   EMISSION_4      DOUBLE           69.263229<br>   AZ_DIF_0        DOUBLE           103.44067<br>   AZ_DIF_1        DOUBLE           103.40625<br>   AZ_DIF_2        DOUBLE           103.21777<br>   AZ_DIF_3        DOUBLE           103.46878<br>   AZ_DIF_4        DOUBLE           103.66153<br>   OBSERVER_DIST_0 DOUBLE           27941.348<br>   SPECULAR_DIST_0 DOUBLE           94.304420<br>   OT_DISTANCE     DOUBLE           28933.352<br>   SOL_LAT         DOUBLE          -3.9178617<br>   SOL_LON         DOUBLE          -156.33441<br>   SP_LAT          DOUBLE           20.274433<br>   SP_LON          DOUBLE          -197.57336<br>   OBS_LAT         DOUBLE           32.658207<br>   OBS_LON         DOUBLE           111.05993<br><br></pre>
+<h2>Use of pp_editablecube<br>
+</h2>
+All variables with cubes exported to the IDL session&nbsp;are
+pp_editablecube objects. If they come from the Cube tab, they are a
+single pp_editablecube with that cube. If they come from the Cube
+selection tab, they are an array of pp_editablecubes, one for each cube
+in the selection.<br>
+<br>
+pp_editablecube is a class designed to read (from the inherited,
+read-only, pp_readcube class), edit and write cubes in the ISIS
+(commonly ".cub" or ".QUB") format. These classes were written from
+scratch, for several reasons:<br>
+<ol>
+  <li>Do not need to install ISIS just to access cubes from IDL.</li>
+  <li>Have a better interface than that of ISIS' awkward routines.</li>
+  <li>Be able to read an write the entire contents of the cube, not
+just the core and backplanes.</li>
+  <li>Be able to store the cube contents and transfer them between
+programs, in a way that the cube can later be recreated, the same as
+the original, or after extensive editing.</li>
+  <li>Handle cubes of any endianness.</li>
+  <li>Implemented completely in IDL, with no need for DLMs or any other
+libraries.</li>
+</ol>
+They are well documented, including examples of common operations, in
+the like below.<br>
+<br>
+<h2>Data description</h2>
+In the current version, each cube contains the following data (all of
+which can be accessed and edited through pp_editablecube):<br>
+<br>
+<ul>
+  <li>Cube metada. From an example:</li>
+</ul>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; REV&nbsp;&nbsp; 093TI			REV identifier</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SEQ&nbsp;&nbsp; S45				Sequence identifier</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SEQ_TITLE&nbsp;&nbsp; VIMS_093TI_GLOBMAP001_CIRS	Sequence title identifier</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PROD_ID&nbsp;&nbsp; 1_1605808125.14960		Cube identifier</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; START&nbsp;&nbsp; 2008-324T17:09:20.747Z	Cube start time</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STOP&nbsp;&nbsp; 2008-324T17:20:43.821Z	Cube stop time</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NAT_START&nbsp;&nbsp; 1.6058081e+09		Cube native clock start time</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LINES&nbsp;&nbsp; 24				Number of lines in the cube</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SAMPLES&nbsp;&nbsp; 64				Number of samples in the cube</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PIXELS&nbsp;&nbsp; 1536				Number of spatial pixels in the cube (lines*samples)</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SURF_PIXELS&nbsp;&nbsp; 1201				Number of pixels whose center line of sight intercept the surface</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; EXPOSURE&nbsp;&nbsp; 420.00000			Exposure time</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IR_MODE&nbsp;&nbsp; NORMAL			Resolution mode for the IR channel</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VIS_MODE&nbsp;&nbsp; NORMAL			Resolution mode for the VIS channel</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DBFILE&nbsp;&nbsp; covims_0032_ir.sav		Database file this comes from</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CUBEFILE&nbsp;&nbsp; CM_1605808125_1_ir_eg.cub	Cube file</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DBIND&nbsp;&nbsp; 2				Index that identifies the database file</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CUBEIND&nbsp;&nbsp; 1				Index that identifies the cube in the database file<br><br><br></pre>
+<ul>
+  <li>Core bands (including wavelengths and units)</li>
+  <li>Sideplanes and bottomplanes (pp_titanbrowse does not use those,
+but they are present in the cubes)</li>
+  <li>Backplanes (includes their names and units). From an example:</li>
+</ul>
+<pre>&nbsp;&nbsp; LATITUDE		NaN		Latitude of the center of pixel line of sight, if it intercepts the surface (from ISIS)</pre>
+<pre>&nbsp;&nbsp; LONGITUDE		NaN		Longitude of the center of pixel line of sight, if it intercepts the surface (from ISIS)<br></pre>
+<pre>&nbsp;&nbsp; SAMPLE_RESOLUTION	NaN		Sample resolution of the center of pixel line of sight, if it intercepts the surface (from ISIS)<br></pre>
+<pre>&nbsp;&nbsp; LINE_RESOLUTION	NaN		Line resolution of the center of pixel line of sight, if it intercepts the surface (from ISIS)<br></pre>
+<pre>&nbsp;&nbsp; PHASE_ANGLE		NaN		Phase angle of the center of pixel line of sight, if it intercepts the surface (from ISIS)<br></pre>
+<pre>&nbsp;&nbsp; INCIDENCE_ANGLE	NaN		Incidence (solar) angle of the center of pixel line of sight, if it intercepts the surface (from ISIS)<br></pre>
+<pre>&nbsp;&nbsp; EMISSION_ANGLE	NaN		Emission (observer) angle of the center of pixel line of sight, if it intercepts the surface (from ISIS)<br></pre>
+<pre>&nbsp;&nbsp; NORTH_AZIMUTH	NaN		North azimuth of the center of pixel line of sight, if it intercepts the surface (from ISIS)<br><br><br></pre>
+<div style="margin-left: 80px;"> For the following backplanes, the data
+refer to the point nearest to the surface in the line of sight, of the
+pixel's center (_0), top-left corner (_1), top-right corner (_2),
+bottom-right corner(_3), and bottom-left corner (_4):</div>
+<pre>&nbsp;&nbsp; LAT_0		-38.839169	Latitude<br><br>   LON_0		160.40419	Longitude<br></pre>
+<pre>&nbsp;&nbsp; ALT_0		102.46656	Altitude to the surface (0 means the pixel intercepts the surface)</pre>
+<pre>&nbsp;&nbsp; PHASE_0		97.228409	Phase angle</pre>
+<pre>&nbsp;&nbsp; INCIDENCE_0		52.578320	Incidence angle</pre>
+<pre>&nbsp;&nbsp; EMISSION_0		89.999977	Emission angle</pre>
+<pre>&nbsp;&nbsp; AZ_DIF_0		99.115982	Azimuth difference between the Sun and the observer</pre>
+<pre>&nbsp;&nbsp; OBSERVER_DIST_0	26201.770	Slant distance from the point to the observer</pre>
+<pre>&nbsp;&nbsp; SPECULAR_DIST_0	93.634842	Angular distance from the point to the specular reflection point</pre>
+<pre>&nbsp;&nbsp; OT_DISTANCE		6338.215	Distance between the target and observer</pre>
+<pre>&nbsp;&nbsp; SOL_LAT		-3.9179378	Subsolar latitude</pre>
+<pre>&nbsp;&nbsp; SOL_LON		-156.21873	Subsolar longitude</pre>
+<pre>&nbsp;&nbsp; SP_LAT		19.903276	Specular point latitude</pre>
+<pre>&nbsp;&nbsp; SP_LON		-197.25456	Specular point longitude</pre>
+<pre>&nbsp;&nbsp; OBS_LAT		32.293877	Subobserver latitude</pre>
+<pre>&nbsp;&nbsp; OBS_LON		111.95390	Subobserver longitude</pre>
+<pre></pre>
+<ul>
+</ul>
+<pre><br></pre>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+Paulo Penteado<br>
+pp.penteado@gmail.com<br>
+Version 20100920<br>
+</div>
+</body>
+</html>
