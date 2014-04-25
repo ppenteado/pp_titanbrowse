@@ -10,6 +10,7 @@ self.proj_inds=ptr_new([117,115,114,110])
 self.iso=ptr_new([0,1,1,1])
 self.bmap=1
 self.height=2.
+self.minim=0d0 & self.maxim=100d0
 
 ;Create the widgets
 ret=self->basewidget::init(parent,_strict_extra=rex,row=2,/base_align_top)
@@ -20,7 +21,7 @@ coord->setproperty,xrange=map.uv_box[[0,2]],yrange=map.uv_box[[1,3]]
 coord->getproperty,map_structure=map
 self.mapstructure=map
 grid=obj_new('map_grid',map_object=coord,color='red',thick=2.)
-draw=obj_new('drawwidget',self,xsize=geo.xsize-20,ysize=geo.ysize-200,coord_object=coord)
+draw=obj_new('drawwidget',self,xsize=geo.xsize-20,ysize=geo.ysize-200,coord_object=coord,/button_events,name=basename+'_drawwidget')
 image=obj_new('catimage',bytarr(10,10),xsize=geo.xsize,ysize=geo.ysize-200,/keep_aspect,display=1);,sclmin=0B,sclmax=255B,bottom=0B,scaletype=0)
 draw->add,image,position=0,/use_coords
 draw->add,grid,position=1
@@ -32,7 +33,7 @@ void=obj_new('buttonwidget',row2col1,value='Export to bitmap file',name=basename
 row2col1_checkbox=obj_new('basewidget',row2col1,/nonexclusive)
 void=obj_new('buttonwidget',row2col1_checkbox,value='Draw only pixels on surface',name=basename+'_surface_only')
 ;Map control widgets
-mapcont=obj_new('basewidget',row2,/base_align_top,frame=1,title='Map controls',row=2)
+mapcont=obj_new('basewidget',row2,/base_align_top,frame=1,title='Map controls',row=3)
 proj=obj_new('droplistwidget',mapcont,value=*self.projs,title='Projection:',name=basename+'_projection',index=self.proj)
 
 ;Load background maps
@@ -55,11 +56,15 @@ row3=obj_new('basewidget',mapcont,row=1)
 lat=obj_new('sliderwidget',row3,maximum=90.0,minimum=-90.0,title='Center latitude',name=basename+'_latitude',value=self.lat)
 lon=obj_new('sliderwidget',row3,maximum=180.0,minimum=-180.0,title='Center longitude',name=basename+'_longitude',value=self.lon)
 height=obj_new('fieldwidget',row3,value=self.height,title='Height:',name=basename+'_height',/cr_events)
+row4=obj_new('basewidget',mapcont,row=1)
+minim=obj_new('sliderwidget',row4,maximum=100.0,minimum=0.0,title='Imagem minimum',name=basename+'_minim',value=self.minim)
+maxim=obj_new('sliderwidget',row4,maximum=100.0,minimum=0.0,title='Image maximum',name=basename+'_maxim',value=self.maxim)
 
 self.maps=ptr_new(smaps,/no_copy)
 ;self.mapimages=ptr_new(mapimages,/no_copy)
 
-
+self.latslider=lat
+self.lonslider=lon
 self.image=image
 self.draw=draw
 self.others=row2
@@ -82,7 +87,7 @@ self.draw.getproperty,geo=geo
 ;xsz=400 & ysz=400
 xsz=geo.xsize & ysz=geo.ysize
 dim=(*self.iso)[self.proj] ? [xsz<ysz,ysz<xsz] : [xsz<(2d0*ysz),ysz<(xsz/2d0)]
-if (self.bmap ne 0) then begin
+if (self.bmap ne 0) && (1) then begin
   dim=(*self.iso)[self.proj] ? [xsz<ysz,ysz<xsz] : [xsz<(2d0*ysz),ysz<(xsz/2d0)]
   image=(*((*self.maps)[self.bmap]).image)
   sz=size(image,/n_dimensions)
@@ -96,11 +101,14 @@ if (self.bmap ne 0) then begin
     endelse
   self.image->setproperty,xsize=dim[0],ysize=dim[1],xstart=(xsz-dim[0])/2d0,ystart=(ysz-dim[1])/2d0
   self.image->setproperty,image=*self.background
-;  self.draw->resize,dim[0],dim[1]
-endif else self.image->setproperty,image=bytarr(10,10)
-self.draw->draw,/erase
-if (self.cube && ptr_valid(self.data)) then begin
   self.draw->draw,/erase
+;  self.draw->resize,dim[0],dim[1]
+endif else begin
+  self.image->setproperty,image=bytarr(10,10)
+  self.draw->draw,/erase
+endelse
+if (self.cube && ptr_valid(self.data)) then begin
+  ;self.draw->draw,/erase
   plot,self.mapstructure.uv_box[[0,2]]*xsz/dim[0],self.mapstructure.uv_box[[1,3]]*ysz/dim[1],/nodata,xstyle=5,ystyle=5,/noerase,xmargin=[0,0],ymargin=[0,0]
   if (self.precision) then begin
     sz=size((*self.data).lons)
@@ -149,12 +157,41 @@ if (self.cube && ptr_valid(self.data)) then begin
   endelse
 endif
 if (self.selected_pixels && ptr_valid(self.data)) then begin
-  self.draw->draw,/erase
+  ;self.draw->draw,/erase
   plot,self.mapstructure.uv_box[[0,2]]*xsz/dim[0],self.mapstructure.uv_box[[1,3]]*ysz/dim[1],/nodata,xstyle=5,ystyle=5,/noerase,xmargin=[0,0],ymargin=[0,0]
   lats=(*self.data)[*].backplanes.lat_0
   lons=(*self.data)[*].backplanes.lon_0
   xy=map_proj_forward(lons,lats,map_structure=self.mapstructure)
   oplot,xy[0,*],xy[1,*],psym=7,color=fsc_color('blue'),thick=2.
+endif
+if (self.pixel_function && ptr_valid(self.data)) then begin
+ ; plot,self.mapstructure.uv_box[[0,2]]*xsz/dim[0],self.mapstructure.uv_box[[1,3]]*ysz/dim[1],/nodata,xstyle=5,ystyle=5,$
+   ; /noerase,xmargin=[0,0],ymargin=[0,0]
+  lats=(*self.data)[*].backplanes.lat_0
+  lons=(*self.data)[*].backplanes.lon_0
+  ;xy=map_proj_forward(lons,lats,map_structure=self.mapstructure)
+  ;oplot,xy[0,*],xy[1,*],psym=7,color=fsc_color('blue'),thick=2.
+  eval=*self.eval
+  w=where(eval.pixdata.backplanes.alt_0 eq 0.,count)
+  lons=lons[w]
+  lats=lats[w]
+  vals=eval[w].val
+  range=pp_quartile(vals,[self.minim/100d0,self.maxim/100d0])
+  triangulate,lons,lats,tr,b,/degrees,sphere=sph,fvalue=vals
+  nvals=trigrid(vals,sphere=sph,[0.5,0.5],[-180.,-90.,180.,90.],/degrees,missing=!values.d_nan,xgrid=lonout,ygrid=latout)
+  pvals=map_proj_image(nvals,[-180.,-90.,180.,90.],map_structure=self.mapstructure,dimensions=dim)
+  pvals=bytscl(range[0]>pvals<range[1])
+  ;print,range,minmax(nvals)
+  self.image->setproperty,xsize=dim[0],ysize=dim[1],xstart=(xsz-dim[0])/2d0,ystart=(ysz-dim[1])/2d0
+  self.image->setproperty,image=pvals
+  self.draw->draw,/erase
+  self.pvals=ptr_new(pvals)
+
+  ;self.background=ptr_new(pvals)
+  ;self.image->setproperty,image=bytarr(10,10)
+;  self.draw->draw,/erase
+  mps=self.mapstructure
+  save,file='test.sav'
 endif
 end
 
@@ -172,6 +209,31 @@ compile_opt idl2,hidden
 ename=strlowcase(event.name)
 self->getproperty,name=basename
 case ename of
+  basename+'_drawwidget' : begin
+    if event.press then begin
+      self.dragstart=[event.x,event.y]
+      return
+    endif
+    if event.release then begin 
+      self.dragend=[event.x,event.y]
+      drag=self.dragend-self.dragstart
+      lendrag=sqrt(total(drag^2))
+      self.draw.getproperty,xsize=dxsz,ysize=dysz
+      radius=min([dxsz,dysz])
+      drag/=radius
+      if lendrag then begin
+         ;print,drag
+         ;print,self.lon,self.lat
+         nlon=-180d0>(self.lon-(180d0-self.lon)*drag[0])<180d0
+         nlat=-90d0>(self.lat-(90d0-self.lat)*drag[1])<90d0
+         ;print,nlon,nlat
+         self.lon=nlon
+         self.lat=nlat
+         self.latslider.setproperty,value=self.lat
+         self.lonslider.setproperty,value=self.lon
+      endif else return
+    endif
+  end
   basename+'_projection' : self.proj=event.index
   basename+'_background' : self.bmap=event.index
   basename+'_precision' : self.precision=event.index
@@ -184,10 +246,13 @@ case ename of
       self.dbobject->getproperty,nselpixels=npix
       widget_control,/hourglass
       if (npix gt 0L) then self.data=ptr_new(self.dbobject->getselectedpixels())
+      if (npix gt 0L) && (self.pixel_function) then self.eval=ptr_new(self.dbobject.evalres)
     endif
   end
   basename+'_longitude' : self.lon=event.value
   basename+'_latitude' : self.lat=event.value
+  basename+'_minim' : self.minim=event.value
+  basename+'_maxim' : self.maxim=event.value
   basename+'_height' : if (*event.value gt 1d-3) then self.height=(*event.value) else begin
     self.height=1d-3
     id->setproperty,value=1d-3
@@ -240,6 +305,8 @@ void={pp_mapwidget,inherits basewidget,draw:obj_new(),data:ptr_new(),cube:0B,$
  selected_pixels:0B,pixel_function:0B,mapimages:ptr_new(),lat:0.,lon:0.,proj:0,bmap:0,$
  projs:ptr_new(),mapstructure:!map,background:ptr_new(),image:obj_new(),others:obj_new(),$
  clean:0B,iso:ptr_new(),coord:obj_new(),grid:obj_new(),proj_inds:ptr_new(),height:0.,$
- mode:obj_new(),maps:ptr_new(),precision:0B,cubedata:obj_new(),dbobject:obj_new(),surfaceonly:0B}
+ mode:obj_new(),maps:ptr_new(),precision:0B,cubedata:obj_new(),dbobject:obj_new(),surfaceonly:0B,$}
+ eval:ptr_new(),pvals:ptr_new(),minim:0d0,maxim:100d0,dragstart:[0L,0L],dragend:[0L,0L],$
+ latslider:obj_new(),lonslider:obj_new()}
  
 end

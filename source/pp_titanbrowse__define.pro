@@ -155,11 +155,11 @@ count=total(*self.nselcubes,/integer)
 self->selectpixels,/none
 end
 
-pro pp_titanbrowse::selectpixels,iexpr,all=all,none=none,count=count
+pro pp_titanbrowse::selectpixels,iexpr,all=all,none=none,count=count,eval=eval
 ;Changes the current pixel selection, to all pixels or no pixels, or filter the selection with the given expression.
 ;iexpr must already be in the internal format (expressions built with aliases must be parsed to make them valid here).
 compile_opt idl2
-
+eval=keyword_set(eval)
 if keyword_set(none) then begin ;If selection is to be cleared
   (*self.nselpixels)[*]=0L
   ptr_free,(*self.selpixels),(*self.selpixels_c),(*self.selpixels_xz)
@@ -223,6 +223,39 @@ endif
 count=long(total(*self.nselpixels))
 ;Set update flag
 self.update=1B
+end
+
+function pp_titanbrowse::evalexpr,iexpr,store=store
+compile_opt idl2,logical_predicate
+expr=strtrim(iexpr,2)
+pd={pp_titanbrowse_pixdata}
+self.getproperty,nselpixels=nsp
+res=replicate({pp_titanbrowse_eval,val:!values.d_nan,pixdata:pd},nsp)
+icount=0LL
+sp=self.getselectedpixels()
+res.pixdata=sp
+for i=0,self.nfiles-1 do if ((*self.nselpixels)[i] gt 0) then begin ;Skip files with no pixels selected
+  ;Make sel and to be used in expr
+  sel=*((*self.selpixels)[i]) ;Indexes of selected pixels
+  tmp=execute('nsel='+expr)
+  if tmp then w=where(nsel,count,/l64) else begin
+    print,'pp_titanbrowse::selectpixels: Expression evaluation error'
+    break
+  endelse  
+;  (*self.nselpixels)[i]=count
+;  ptr_free,(*self.selpixels)[i]
+  if (count gt 0) then begin
+    nc=(*self.nselpixels)[i]
+    res[icount:icount+nc-1].val=nsel
+;    (*self.selpixels)[i]=ptr_new(sel[w])
+;    *((*self.selpixels_c)[i])=(*((*self.selpixels_c)[i]))[w]
+;    *((*self.selpixels_xz)[i])=(*((*self.selpixels_xz)[i]))[*,w]
+  endif
+    icount+=nc
+endif
+if keyword_set(store) then self.evalres=ptr_new(res)
+return,res
+
 end
 
 function pp_titanbrowse::parseexpr,iexpr,cubes=cubes,pixels=pixels
@@ -321,7 +354,7 @@ end
 
 pro pp_titanbrowse::getproperty,cubelist=cubelist,pixellist=pixellist,update=update,$
  mdbfiles=mdbfiles,odb=odb,std=std,nselcubes=nselcubes,nselpixels=nselpixels,version=version,$
- used_memory=used_memory
+ used_memory=used_memory,evalres=evalres
 compile_opt idl2
 
 if arg_present(cubelist) then begin
@@ -395,6 +428,8 @@ if (arg_present(used_memory)) then begin
     used_memory+=um
   endfor
 endif
+
+if arg_present(evalres) then evalres=self.evalres ? *self.evalres : !null
 
 end
 
@@ -510,5 +545,5 @@ void={pp_titanbrowse,version:'',nfiles:0,mdbfiles:ptr_new(),podb:ptr_new(),std:p
  dbvecs:{pp_titanbrowse_dbvecs,core:ptr_new(),back:ptr_new()},$
  nselcubes:ptr_new(),nselpixels:ptr_new(),selcubes:ptr_new(),selpixels:ptr_new(),$
  selpixels_c:ptr_new(),selpixels_xz:ptr_new(),update:0B,$
- backindex:obj_new(),inherits IDL_Object}
+ backindex:obj_new(),inherits IDL_Object,evalres:ptr_new()}
 end

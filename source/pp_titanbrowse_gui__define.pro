@@ -22,7 +22,7 @@ if (~obj_valid(self.db)) then return,0
 ;Set up GUI
 ;Default window dimension
 DEFXSZ=800
-DEFYSZ=600
+DEFYSZ=700
 self.DEFXSZ=DEFXSZ
 self.DEFYSZ=DEFYSZ
 ret=self->toplevelbase::init(/scroll,/size_events,$
@@ -197,9 +197,16 @@ switch ename of
       widget_control,/hourglass
       self.db->selectcubes,pexpr,count=count
     endif else begin
-      pexpr=self.db->parseexpr(val,/pixel)
-      widget_control,/hourglass
-      self.db->selectpixels,pexpr,count=count
+      ev=(strmid(val,0,1) eq '#')
+      if ev then begin
+        pexpr=self.db->parseexpr(strmid(val,1),/pixel)
+        widget_control,/hourglass
+        !null=self.db.evalexpr(pexpr,/store)
+      endif else begin
+        pexpr=self.db->parseexpr(val,/pixel)
+        widget_control,/hourglass
+        self.db->selectpixels,pexpr,count=count
+      endelse
     endelse
     event.handler->sendmessage,'updatelist',data=self.db
     break
