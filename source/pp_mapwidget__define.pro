@@ -162,6 +162,13 @@ if (self.selected_pixels && ptr_valid(self.data)) then begin
   plot,self.mapstructure.uv_box[[0,2]]*xsz/dim[0],self.mapstructure.uv_box[[1,3]]*ysz/dim[1],/nodata,xstyle=5,ystyle=5,/noerase,xmargin=[0,0],ymargin=[0,0]
   lats=(*self.data)[*].backplanes.lat_0
   lons=(*self.data)[*].backplanes.lon_0
+  alts0=(*self.data)[*].backplanes.alt_0
+  alts1=(*self.data)[*].backplanes.alt_1
+  alts2=(*self.data)[*].backplanes.alt_2
+  alts3=(*self.data)[*].backplanes.alt_3
+  alts4=(*self.data)[*].backplanes.alt_4
+  w=where(not (alts0 or alts1 or alts2 or alts3 or alts4))
+  lats=lats[w] & lons=lons[w]
   xy=map_proj_forward(lons,lats,map_structure=self.mapstructure)
   oplot,xy[0,*],xy[1,*],psym=7,color=fsc_color('blue'),thick=2.
 endif
@@ -173,7 +180,12 @@ if (self.pixel_function && ptr_valid(self.data)) then begin
   ;xy=map_proj_forward(lons,lats,map_structure=self.mapstructure)
   ;oplot,xy[0,*],xy[1,*],psym=7,color=fsc_color('blue'),thick=2.
   eval=*self.eval
-  w=where(eval.pixdata.backplanes.alt_0 eq 0.,count)
+  alt0=eval.pixdata.backplanes.alt_0
+  alt1=eval.pixdata.backplanes.alt_1
+  alt2=eval.pixdata.backplanes.alt_2
+  alt3=eval.pixdata.backplanes.alt_3
+  alt4=eval.pixdata.backplanes.alt_4
+  w=where(not (alt0 or alt1 or alt2 or alt3 or alt4),count)
   lons=lons[w]
   lats=lats[w]
   vals=eval[w].val
