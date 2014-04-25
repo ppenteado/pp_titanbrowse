@@ -88,7 +88,7 @@ self.draw.getproperty,geo=geo
 ;xsz=400 & ysz=400
 xsz=geo.xsize & ysz=geo.ysize
 dim=(*self.iso)[self.proj] ? [xsz<ysz,ysz<xsz] : [xsz<(2d0*ysz),ysz<(xsz/2d0)]
-if (self.bmap ne 0) && (1) then begin
+if (self.bmap ne 0) && (~self.pixel_function) then begin
   dim=(*self.iso)[self.proj] ? [xsz<ysz,ysz<xsz] : [xsz<(2d0*ysz),ysz<(xsz/2d0)]
   image=(*((*self.maps)[self.bmap]).image)
   sz=size(image,/n_dimensions)
@@ -106,7 +106,7 @@ if (self.bmap ne 0) && (1) then begin
 ;  self.draw->resize,dim[0],dim[1]
 endif else begin
   self.image->setproperty,image=bytarr(10,10)
-  self.draw->draw,/erase
+  if (~self.pixel_function) then self.draw->draw,/erase
 endelse
 if (self.cube && ptr_valid(self.data)) then begin
   ;self.draw->draw,/erase
@@ -126,7 +126,7 @@ if (self.cube && ptr_valid(self.data)) then begin
         lons[w]=!values.f_nan
       endif
     endif
-    xy=map_proj_forward(lons,lats,map_structure=self.mapstructure)
+    xy=map_proj_forward(-lons,lats,map_structure=self.mapstructure)
     for i=0L,np-1L do oplot,xy[0,i*5:(i+1)*5-1],xy[1,i*5:(i+1)*5-1],color=fsc_color('blue')
   endif else begin
     sz=size((*self.data).clons)
@@ -142,7 +142,7 @@ if (self.cube && ptr_valid(self.data)) then begin
         lons[w]=!values.f_nan
       endif
     endif
-    xy=map_proj_forward(lons,lats,map_structure=self.mapstructure)
+    xy=map_proj_forward(-lons,lats,map_structure=self.mapstructure)
     if (nd eq 1) then oplot,xy[0,*],xy[1,*],color=fsc_color('green') else begin
       lats=reform(reform(xy[1,*]),sz[1],sz[2])
       lons=reform(reform(xy[0,*]),sz[1],sz[2])
@@ -192,7 +192,7 @@ if (self.pixel_function && ptr_valid(self.data)) then begin
   ;self.image->setproperty,image=bytarr(10,10)
 ;  self.draw->draw,/erase
   mps=self.mapstructure
-  save,file='test.sav'
+  ;save,file='test.sav'
 endif
 end
 
