@@ -5,10 +5,9 @@ compile_opt idl2,hidden
 self.dbobject=dbobject
 
 ;Initialize map parameters
-self.projs=ptr_new(['Equirectangular','Near Side Perspective','Orthographic','Stereographic','Mollweide',$
-  'Sinusoidal','Robinson','Goode'])
-self.proj_inds=ptr_new([117,115,114,110,125,116,121,124])
-self.iso=ptr_new([0,1,1,1,0,0,0,0])
+self.projs=ptr_new(['Equirectangular','Near Side Perspective','Orthographic','Stereographic'])
+self.proj_inds=ptr_new([117,115,114,110])
+self.iso=ptr_new([0,1,1,1])
 self.bmap=1
 self.height=2.
 self.minim=0d0 & self.maxim=100d0
@@ -80,7 +79,7 @@ pro pp_mapwidget::update
 compile_opt idl2,hidden
 h=self.height*self.mapstructure.a
 self.mapstructure=self.coord->setmapprojection((*self.proj_inds)[self.proj],center_latitude=self.lat,$
- center_longitude=self.lon,height=h,semimajor=5d6,semiminor=5d6,/relaxed)
+ center_longitude=self.lon,height=h,/relaxed)
 uvbox=self.mapstructure.uv_box
 aspect=(uvbox[3]-uvbox[1])/(uvbox[2]-uvbox[0])
 self.coord->setproperty,xrange=uvbox[[0,2]],yrange=uvbox[[1,3]]
@@ -249,7 +248,6 @@ case ename of
       if (npix gt 0L) then self.data=ptr_new(self.dbobject->getselectedpixels())
       if (npix gt 0L) && (self.pixel_function) then self.eval=ptr_new(self.dbobject.evalres)
     endif
-    if self.cube && self.cubesdata then self.data=ptr_new(*self.cubesdata)
   end
   basename+'_longitude' : self.lon=event.value
   basename+'_latitude' : self.lat=event.value
@@ -297,7 +295,6 @@ if (title eq 'cubeselected') then begin
    alts:data->getsuffixbyname(['ALT_1','ALT_2','ALT_3','ALT_4','ALT_1']),$
    clats:data->getsuffixbyname('LAT_0'),clons:(-(data->getsuffixbyname('LON_0')-360d0 mod 360)),$
    calts:data->getsuffixbyname('ALT_0')})
-  self.cubesdata=ptr_new(*self.data)
   self->update
 endif
 end
@@ -310,6 +307,6 @@ void={pp_mapwidget,inherits basewidget,draw:obj_new(),data:ptr_new(),cube:0B,$
  clean:0B,iso:ptr_new(),coord:obj_new(),grid:obj_new(),proj_inds:ptr_new(),height:0.,$
  mode:obj_new(),maps:ptr_new(),precision:0B,cubedata:obj_new(),dbobject:obj_new(),surfaceonly:0B,$}
  eval:ptr_new(),pvals:ptr_new(),minim:0d0,maxim:100d0,dragstart:[0L,0L],dragend:[0L,0L],$
- latslider:obj_new(),lonslider:obj_new(),cubesdata:ptr_new()}
+ latslider:obj_new(),lonslider:obj_new()}
  
 end
