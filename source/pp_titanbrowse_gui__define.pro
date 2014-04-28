@@ -200,18 +200,32 @@ switch ename of
         endif else begin
           histodata=(self.db).cubeevalres
         endelse
-        title=event.name eq 'pixel_button' ? self.lastpixexpr : self.lastcubeexpr
+        ;title=event.name eq 'pixel_button' ? self.lastpixexpr : self.lastcubeexpr
+        minmaxh=minmax(histodata,/nan)
+        meanh=mean(histodata,/nan)
+        stddevh=stddev(histodata,/nan)
+        title='Min: '+strtrim(minmaxh[0],2)+' Max: '+strtrim(minmaxh[1],2)+' Mean: '+strtrim(meanh,2)+$
+         ' Stddev: '+strtrim(stddevh,2)
         if ~obj_valid(self.histowindow) then begin
           pname=(strsplit(event.name,'_',/extract))[0]
-          cgwindow,'cghistoplot',histodata,wtitle='pp_titanbrowse histogram ('+pname+' values)',$
-            title=title 
+          cgwindow,wtitle='pp_titanbrowse histogram ('+pname+' values)';,'cghistoplot',histodata,$
+            ;title=title,histdata=histdata
           wid=cgquery(/current,objectref=obj)
           self.histowindow=obj
-        endif else begin
+        endif; else begin
           cgset,self.histowindow,/object
-          cghistoplot,/window,histodata,title=title
+          cghistoplot,histodata,histdata=histdata,/nan
+          cghistoplot,histodata,histdata=histdata,/window,title=title,/nan
           cgshow,self.histowindow,/object
-        endelse
+        ;endelse
+        minmaxhd=minmax(histdata)
+        cgwindow,'cgplot',[meanh,meanh],minmaxhd,/over,/addcmd,linestyle=1
+        cgwindow,'cgplot',[minmaxh[0],minmaxh[0]],minmaxhd,/over,/addcmd
+        cgwindow,'cgplot',[minmaxh[1],minmaxh[1]],minmaxhd,/over,/addcmd
+        quarts=pp_quartile(histodata,[0.05,0.95])
+;        cgwindow,'cgplot',[quarts[0],quarts[0]],minmaxhd,/over,/addcmd,linestyle=1
+;        cgwindow,'cgplot',[quarts[1],quarts[1]],minmaxhd,/over,/addcmd,linestyle=1
+;        print,meanh,quarts
      end
     endcase
 ;Update own widget and the other with the new selection
