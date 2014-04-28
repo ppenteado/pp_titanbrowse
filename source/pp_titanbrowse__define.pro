@@ -12,7 +12,7 @@
 function pp_titanbrowse::init,mdbfiles,vis=vis
 compile_opt idl2
 ret=0
-self.version='20110718'
+self.version='20140420'
 ;Defaults
 vis=n_elements(vis) eq 1 ? vis : 0
 channel=vis ? 'vis' : 'ir'
@@ -225,35 +225,74 @@ count=long(total(*self.nselpixels))
 self.update=1B
 end
 
-function pp_titanbrowse::evalexpr,iexpr,store=store
+function pp_titanbrowse::evalexpr,iexpr,store=store,cube=cube
 compile_opt idl2,logical_predicate
+cube=keyword_set(cube)
 expr=strtrim(iexpr,2)
-pd={pp_titanbrowse_pixdata}
-self.getproperty,nselpixels=nsp
-res=replicate({pp_titanbrowse_eval,val:!values.d_nan,pixdata:pd},nsp)
-icount=0LL
-sp=self.getselectedpixels()
-res.pixdata=sp
-for i=0,self.nfiles-1 do if ((*self.nselpixels)[i] gt 0) then begin ;Skip files with no pixels selected
-  ;Make sel and to be used in expr
-  sel=*((*self.selpixels)[i]) ;Indexes of selected pixels
-  tmp=execute('nsel='+expr)
-  if tmp then w=where(nsel,count,/l64) else begin
-    print,'pp_titanbrowse::selectpixels: Expression evaluation error'
-    break
-  endelse  
-;  (*self.nselpixels)[i]=count
-;  ptr_free,(*self.selpixels)[i]
-  if (count gt 0) then begin
-    nc=(*self.nselpixels)[i]
-    res[icount:icount+nc-1].val=nsel
-;    (*self.selpixels)[i]=ptr_new(sel[w])
-;    *((*self.selpixels_c)[i])=(*((*self.selpixels_c)[i]))[w]
-;    *((*self.selpixels_xz)[i])=(*((*self.selpixels_xz)[i]))[*,w]
+if (~cube) then begin
+  pd={pp_titanbrowse_pixdata}
+  self.getproperty,nselpixels=nsp
+  res=replicate({pp_titanbrowse_eval,val:!values.d_nan,pixdata:pd},nsp)
+  icount=0LL
+  sp=self.getselectedpixels()
+  res.pixdata=sp
+  for i=0,self.nfiles-1 do if ((*self.nselpixels)[i] gt 0) then begin ;Skip files with no pixels selected
+    ;Make sel and to be used in expr
+    sel=*((*self.selpixels)[i]) ;Indexes of selected pixels
+    tmp=execute('nsel='+expr)
+    if tmp then w=where(nsel,count,/l64) else begin
+      print,'pp_titanbrowse::selectpixels: Expression evaluation error'
+      break
+    endelse  
+  ;  (*self.nselpixels)[i]=count
+  ;  ptr_free,(*self.selpixels)[i]
+    if (count gt 0) then begin
+      nc=(*self.nselpixels)[i]
+      res[icount:icount+nc-1].val=nsel
+  ;    (*self.selpixels)[i]=ptr_new(sel[w])
+  ;    *((*self.selpixels_c)[i])=(*((*self.selpixels_c)[i]))[w]
+  ;    *((*self.selpixels_xz)[i])=(*((*self.selpixels_xz)[i]))[*,w]
+    endif
+      icount+=nc
   endif
-    icount+=nc
-endif
-if keyword_set(store) then self.evalres=ptr_new(res)
+  if keyword_set(store) then self.evalres=ptr_new(res)
+endif else begin
+  ret=list()
+  for i=0,self.nfiles-1 do begin
+    catch,error_status
+    if (error_status ne 0) then begin
+      catch,/cancel
+      print,'pp_titanbrowse::selectcubes: Expression evaluation error'
+      break
+    endif else if ((*self.nselcubes)[i] gt 0) then begin ;Skip filtering if there are already none selected
+      ;Make sel and cmd to be used in expr
+      sel=*((*self.selcubes)[i])
+      pcmd=(*self.podb)[i]->getcmd()
+      ;      cmd=temporary(*pcmd) ;Borrow instead of copy it, for efficiency
+      cmd=(*pcmd)
+      tmp=execute('nsel='+expr)
+      ;Put cmd's contents back
+      ;      *pcmd=temporary(cmd)
+      ;Make the new selection
+      if tmp then w=where(nsel[sel],count,/l64) else begin
+        print,'pp_titanbrowse::selectcubes: Expression evaluation error'
+        break
+      endelse
+      if (count gt 0) then begin
+        nc=(*self.nselcubes)[i]
+        ret.add,nsel[sel],/extract
+        ;    (*self.selpixels)[i]=ptr_new(sel[w])
+        ;    *((*self.selpixels_c)[i])=(*((*self.selpixels_c)[i]))[w]
+        ;    *((*self.selpixels_xz)[i])=(*((*self.selpixels_xz)[i]))[*,w]
+      endif      
+;      (*self.nselcubes)[i]=count
+;      ptr_free,(*self.selcubes)[i]
+;      if (count gt 0) then (*self.selcubes)[i]=ptr_new(sel[w])
+    endif
+  endfor
+  res=reform(ret.toarray())
+  if keyword_set(store) then self.cubeevalres=ptr_new(res)
+endelse
 return,res
 
 end
@@ -354,7 +393,7 @@ end
 
 pro pp_titanbrowse::getproperty,cubelist=cubelist,pixellist=pixellist,update=update,$
  mdbfiles=mdbfiles,odb=odb,std=std,nselcubes=nselcubes,nselpixels=nselpixels,version=version,$
- used_memory=used_memory,evalres=evalres
+ used_memory=used_memory,evalres=evalres,cubeevalres=cubeevalres
 compile_opt idl2
 
 if arg_present(cubelist) then begin
@@ -430,6 +469,7 @@ if (arg_present(used_memory)) then begin
 endif
 
 if arg_present(evalres) then evalres=self.evalres ? *self.evalres : !null
+if arg_present(cubeevalres) then cubeevalres=self.cubeevalres ? *self.cubeevalres : !null
 
 end
 
@@ -545,5 +585,5 @@ void={pp_titanbrowse,version:'',nfiles:0,mdbfiles:ptr_new(),podb:ptr_new(),std:p
  dbvecs:{pp_titanbrowse_dbvecs,core:ptr_new(),back:ptr_new()},$
  nselcubes:ptr_new(),nselpixels:ptr_new(),selcubes:ptr_new(),selpixels:ptr_new(),$
  selpixels_c:ptr_new(),selpixels_xz:ptr_new(),update:0B,$
- backindex:obj_new(),inherits IDL_Object,evalres:ptr_new()}
+ backindex:obj_new(),inherits IDL_Object,evalres:ptr_new(),cubeevalres:ptr_new()}
 end

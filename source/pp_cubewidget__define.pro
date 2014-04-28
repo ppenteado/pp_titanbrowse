@@ -156,10 +156,20 @@ if (obj_valid(self.cube)) then begin
     contour,lat,/noerase,color=fsc_color('red'),xstyle=1,ystyle=1,nlevels=21,xmargin=[0,0],ymargin=[0,0]
     contour,lon,/noerase,color=fsc_color('red'),xstyle=1,ystyle=1,nlevels=21,xmargin=[0,0],ymargin=[0,0]
   endif
-  if (self.band_mode eq 1B) && ptr_valid(self.band_im) then $
-   contour,*self.band_im,color=fsc_color('blue'),nlevels=21,xstyle=1,ystyle=1,/noerase,xmargin=[0,0],ymargin=[0,0]
-  if (self.backplane_mode eq 1B) && ptr_valid(self.backplane_im) then $
-   contour,*self.backplane_im,color=fsc_color('green'),nlevels=21,xstyle=1,ystyle=1,/noerase,xmargin=[0,0],ymargin=[0,0]
+  if (self.band_mode eq 1B) && ptr_valid(self.band_im) then begin
+    szcont=size(*self.band_im,/dimensions)
+    xcont=dindgen(szcont[0])-0.5d0
+    ycont=dindgen(szcont[1])-0.5d0
+    contour,*self.band_im,xcont,ycont,color=fsc_color('blue'),nlevels=21,xstyle=1,ystyle=1,/noerase,$
+      xmargin=[0,0],ymargin=[0,0],xrange=[0,szcont[0]-1],yrange=[0,szcont[1]-1]
+  endif
+  if (self.backplane_mode eq 1B) && ptr_valid(self.backplane_im) then begin
+   szcont=size(*self.backplane_im,/dimensions)
+   xcont=dindgen(szcont[0])-0.5d0
+   ycont=dindgen(szcont[1])-0.5d0
+   contour,*self.backplane_im,xcont,ycont,color=fsc_color('green'),nlevels=21,xstyle=1,ystyle=1,/noerase,$
+     xmargin=[0,0],ymargin=[0,0],xrange=[0,szcont[0]-1],yrange=[0,szcont[1]-1]
+  endif
 endif
 if (ename eq basename+'_band') && (event.drag ne 1) then begin ;Do not forward drag events
   self->getproperty,parents=par

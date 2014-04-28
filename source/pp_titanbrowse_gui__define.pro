@@ -13,8 +13,8 @@
 ;-
 
 function pp_titanbrowse_gui::init,mdbfiles,vis=vis
-compile_opt idl2
-self.version='20110719'
+compile_opt idl2,logical_predicate
+self.version='20140420'
 ;Initialize db
 self.db=obj_new('pp_titanbrowse',mdbfiles,vis=vis)
 self.db->getproperty,version=dbversion
@@ -91,14 +91,14 @@ return,ret
 end
 
 pro pp_titanbrowse_gui::cleanup
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 obj_destroy,self.db
 self->toplevelbase::cleanup
 end
 
 pro pp_titanbrowse_gui::eventhandler,event
 ;Single handler for every event 
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 ;print,'event:'
 ;help,event,/structure
 ename=strlowcase(event.name)
@@ -183,6 +183,36 @@ switch ename of
       event.handler->getproperty,frozen=frozen
       event.handler->setproperty,frozen=~frozen
     end
+    'histogram' : begin
+      histodata=dist(256)
+        if event.name eq 'pixel_button' then begin
+          eval=(self.db).evalres
+          if n_elements(eval) then begin
+            histodata=eval.val
+            alt0=eval.pixdata.backplanes.alt_0
+            alt1=eval.pixdata.backplanes.alt_1
+            alt2=eval.pixdata.backplanes.alt_2
+            alt3=eval.pixdata.backplanes.alt_3
+            alt4=eval.pixdata.backplanes.alt_4
+            w=where(not (alt0 or alt1 or alt2 or alt3 or alt4),count)
+            histodata=histodata[w]
+          endif
+        endif else begin
+          histodata=(self.db).cubeevalres
+        endelse
+        title=event.name eq 'pixel_button' ? self.lastpixexpr : self.lastcubeexpr
+        if ~obj_valid(self.histowindow) then begin
+          pname=(strsplit(event.name,'_',/extract))[0]
+          cgwindow,'cghistoplot',histodata,wtitle='pp_titanbrowse histogram ('+pname+' values)',$
+            title=title 
+          wid=cgquery(/current,objectref=obj)
+          self.histowindow=obj
+        endif else begin
+          cgset,self.histowindow,/object
+          cghistoplot,/window,histodata,title=title
+          cgshow,self.histowindow,/object
+        endelse
+     end
     endcase
 ;Update own widget and the other with the new selection
     event.handler->sendmessage,'updatelist',data=self.db
@@ -192,16 +222,24 @@ switch ename of
   'cubeselector_functext' : begin
     widget_control,/hourglass
     event.id->getproperty,value=val
+    ev=(strmid(val,0,1) eq '=')
     if (ename eq 'cubeselector_functext') then begin
-      pexpr=self.db->parseexpr(val,/cube)
-      widget_control,/hourglass
-      self.db->selectcubes,pexpr,count=count
+      if ev then begin
+        pexpr=self.db->parseexpr(strmid(val,1),/cube)
+        widget_control,/hourglass
+        !null=self.db.evalexpr(pexpr,/store,/cube)
+        self.lastcubeexpr=strmid(val,1)
+      endif else begin
+        pexpr=self.db->parseexpr(val,/cube)
+        widget_control,/hourglass
+        self.db->selectcubes,pexpr,count=count
+      endelse
     endif else begin
-      ev=(strmid(val,0,1) eq '#')
       if ev then begin
         pexpr=self.db->parseexpr(strmid(val,1),/pixel)
         widget_control,/hourglass
         !null=self.db.evalexpr(pexpr,/store)
+        self.lastpixexpr=strmid(val,1)
       endif else begin
         pexpr=self.db->parseexpr(val,/pixel)
         widget_control,/hourglass
@@ -238,7 +276,7 @@ end
 pro pp_titanbrowse_gui_tabwidget::messagehandler,title,sender=sender,data=data
 ;Called when resizing is needed
 ;Call to draw is left to the sender
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 self->getproperty,scr_xsize=sxs,scr_ysize=sys
 xb=data[1].xsize-sxs & yb=data[1].ysize-sys
 self->setproperty,scr_xsize=data[0].xsize-xb,scr_ysize=data[0].ysize-yb
@@ -247,7 +285,7 @@ end
 pro pp_titanbrowse_gui_treewidget::messagehandler,title,sender=sender,data=data
 ;Called when resizing is needed
 ;Call to draw is left to the sender
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 self->getproperty,scr_xsize=sxs,scr_ysize=sys
 xr=(1d0*sxs)/data[1].xsize & yb=data[1].ysize-sys
 self->setproperty,scr_xsize=data[0].xsize*xr,scr_ysize=data[0].ysize-yb
@@ -256,7 +294,7 @@ end
 pro pp_titanbrowse_gui_textwidget::messagehandler,title,sender=sender,data=data
 ;Called when resizing is needed
 ;Call to draw on resize is left to the sender
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 case title of
   'resize': begin ;Update size
     self->getproperty,scr_xsize=sxs,scr_ysize=sys
@@ -291,7 +329,7 @@ end
 function pp_titanbrowse_gui_selectorwidget::init,parent,cube=cube,pixel=pixel,std=std,db=db,_ref_extra=rex
 ;Compound widget for cube or pixel selection
 ;Extra keywords go to the base widget initializer
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 ;Defaults
 cube=keyword_set(cube) ? 1B : keyword_set(pixel) ? 0B : 1B
 pixel=~cube
@@ -325,6 +363,8 @@ void=obj_new('buttonwidget',button_base,value='Select all',/dynamic_resize,name=
  tooltip=cube ? 'Select every cube in the database' : 'Select every pixel of the selected cubes')
 void=obj_new('buttonwidget',button_base,value='Propagate selection',/dynamic_resize,name=tlabel+'_button',uvalue='propagate',$
  tooltip=cube ? 'Select every pixel of the selected cubes' : 'Keep selected only the cubes with pixels in the list (and clear the pixel list)')
+void=obj_new('buttonwidget',button_base,value='Histogram',/dynamic_resize,name=tlabel+'_button',uvalue='histogram',$
+   tooltip='Make a histogram of the selected function values')
 export_base=obj_new('basewidget',row3,frame=1,column=1,/base_align_left)
 void=obj_new('labelwidget',export_base,value='Export list')
 export_cube_name=obj_new('fieldwidget',export_base,title='Export to variable:',name=basename+'_export_name',/cr_events,/column)
@@ -378,13 +418,13 @@ return,ret
 end
 
 pro pp_titanbrowse_gui_selectorwidget::getproperty,frozen=frozen,_ref_extra=rex
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 if arg_present(frozen) then frozen=self.frozen
 if (n_elements(rex) gt 0) then self->basewidget::getproperty,_strict_extra=rex 
 end
 
 pro pp_titanbrowse_gui_selectorwidget::setproperty,list=list,nsel=nsel,frozen=frozen,_ref_extra=rex
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 if (n_elements(nsel) gt 0) then begin
   self.list->setproperty,value=n_elements(list) gt 0 ? list : ''
   val='Selected '+(self.cube ? 'cube' : 'pixel')+'s: '+strtrim(string(nsel),2)
@@ -399,7 +439,7 @@ end
 
 pro pp_titanbrowse_gui_selectorwidget::eventhandler,event
 ;Intercepts events to update the text in the function text widget, then passes the event on 
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 if ((event.name eq 'cubeselector_vartree_cube')||(event.name eq 'pixelselector_vartree_pixel'))&&(event.clicks eq 2) then begin
   event.id->getproperty,uvalue=uv
   self.selfunction->getproperty,value=text
@@ -450,7 +490,7 @@ par->eventhandler,event
 end
 
 pro pp_titanbrowse_gui_selectorwidget::messagehandler,title,sender=sender,data=data
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 if (title eq 'updatelist') then begin
   if (self.cube) then begin
     if (self.frozen) then begin
@@ -476,16 +516,16 @@ if (title eq 'functionreplace') then self.selfunction->setproperty,value=data
 end
 
 pro pp_titanbrowse_gui::getproperty,db=db,_ref_extra=rex,version=version
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 if (arg_present(db)) then db=self.db
 if (arg_present(version)) then version=self.version
 if (n_elements(rex) gt 0) then self->toplevelbase::getproperty,_strict_extra=rex
 end
 
 pro pp_titanbrowse_gui__define
-compile_opt idl2
+compile_opt idl2,logical_predicate
 void={pp_titanbrowse_gui,inherits toplevelbase,db:obj_new(),selected_cube:lonarr(2),DEFXSZ:0,DEFYSZ:0,$
- cubeinfo:ptr_new(),cubeinfo_text:obj_new(),version:''}
+ cubeinfo:ptr_new(),cubeinfo_text:obj_new(),version:'',histowindow:obj_new(),lastpixexpr:'',lastcubeexpr:''}
 void={pp_titanbrowse_gui_tabwidget,inherits tabwidget} ;Simple extension for tabwidget to provide a messagehandler
 void={pp_titanbrowse_gui_treewidget,inherits treewidget} ;Simple extension for treewidget to provide a messagehandler
 void={pp_titanbrowse_gui_textwidget,inherits textwidget,minyborder:0} ;Simple extension for textidget to provide a messagehandler

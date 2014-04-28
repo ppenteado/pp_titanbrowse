@@ -1,6 +1,6 @@
 
 function pp_mapwidget::init,parent,_ref_extra=rex,maps=maps,dbobject=dbobject
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 
 self.dbobject=dbobject
 
@@ -14,7 +14,7 @@ self.height=2.
 self.minim=0d0 & self.maxim=100d0
 
 ;Create the widgets
-ret=self->basewidget::init(parent,_strict_extra=rex,row=2,/base_align_top)
+ret=self->basewidget::init(parent,_strict_extra=rex,row=3,/base_align_top)
 self->getproperty,name=basename,geo=geo
 coord=obj_new('mapcoord',117)
 coord->getproperty,map_structure=map
@@ -22,13 +22,15 @@ coord->setproperty,xrange=map.uv_box[[0,2]],yrange=map.uv_box[[1,3]]
 coord->getproperty,map_structure=map
 self.mapstructure=map
 grid=obj_new('map_grid',map_object=coord,color='red',thick=2.)
-draw=obj_new('drawwidget',self,xsize=geo.xsize-20,ysize=geo.ysize-200,coord_object=coord,/button_events,name=basename+'_drawwidget')
-image=obj_new('catimage',bytarr(10,10),xsize=geo.xsize,ysize=geo.ysize-200,/keep_aspect,display=1);,sclmin=0B,sclmax=255B,bottom=0B,scaletype=0)
+draw=obj_new('drawwidget',self,xsize=geo.xsize-20,ysize=geo.ysize-250,coord_object=coord,/button_events,$
+  /motion_events,name=basename+'_drawwidget')
+image=obj_new('catimage',bytarr(10,10),xsize=geo.xsize,ysize=geo.ysize-250,/keep_aspect,display=1);,sclmin=0B,sclmax=255B,bottom=0B,scaletype=0)
 draw->add,image,position=0,/use_coords
 draw->add,grid,position=1
 row2=obj_new('basewidget',self,row=1,/base_align_top)
 row2col1=obj_new('basewidget',row2,column=1,/base_align_left)
-droplist=obj_new('droplistwidget',row2col1,value=['Cube location','Selected pixels location','Selected pixels function'],name=basename+'_mode',title='Display mode:')
+droplist=obj_new('droplistwidget',row2col1,value=['Cube location','Selected pixels location','Selected pixels function'],$
+  name=basename+'_mode',title='Display mode:')
 void=obj_new('droplistwidget',row2col1,value=['Center','Corners'],name=basename+'_precision',title='Pixel location:')
 void=obj_new('buttonwidget',row2col1,value='Export to bitmap file',name=basename+'_export_file')
 row2col1_checkbox=obj_new('basewidget',row2col1,/nonexclusive)
@@ -36,6 +38,9 @@ void=obj_new('buttonwidget',row2col1_checkbox,value='Draw only pixels on surface
 ;Map control widgets
 mapcont=obj_new('basewidget',row2,/base_align_top,frame=1,title='Map controls',row=3)
 proj=obj_new('droplistwidget',mapcont,value=*self.projs,title='Projection:',name=basename+'_projection',index=self.proj)
+;row3=obj_new('basewidget',self,row=1,/base_align_top,)
+status=obj_new('statusbar',parent=self,percent=100,/align_left)
+self.status=status
 
 ;Load background maps
 nmaps=n_elements(maps)
@@ -77,7 +82,7 @@ return,ret
 end
 
 pro pp_mapwidget::update
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 h=self.height*self.mapstructure.a
 self.mapstructure=self.coord->setmapprojection((*self.proj_inds)[self.proj],center_latitude=self.lat,$
  center_longitude=self.lon,height=h,semimajor=5d6,semiminor=5d6,/relaxed)
@@ -192,13 +197,14 @@ if (self.pixel_function && ptr_valid(self.data)) then begin
   range=pp_quartile(vals,[self.minim/100d0,self.maxim/100d0])
   triangulate,lons,lats,tr,b,/degrees,sphere=sph,fvalue=vals
   nvals=trigrid(vals,sphere=sph,[0.5,0.5],[-180.,-90.,180.,90.],/degrees,missing=!values.d_nan,xgrid=lonout,ygrid=latout)
+  nvals=range[0]>nvals<range[1]
   pvals=map_proj_image(nvals,[-180.,-90.,180.,90.],map_structure=self.mapstructure,dimensions=dim)
   pvals=bytscl(range[0]>pvals<range[1])
   ;print,range,minmax(nvals)
   self.image->setproperty,xsize=dim[0],ysize=dim[1],xstart=(xsz-dim[0])/2d0,ystart=(ysz-dim[1])/2d0
   self.image->setproperty,image=pvals
   self.draw->draw,/erase
-  self.pvals=ptr_new(pvals)
+  self.pvals=ptr_new(nvals)
 
   ;self.background=ptr_new(pvals)
   ;self.image->setproperty,image=bytarr(10,10)
@@ -209,7 +215,7 @@ endif
 end
 
 pro pp_mapwidget::draw,_ref_extra=ref
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 self.others->draw
 self->update
 self.draw->draw,/erase
@@ -218,7 +224,7 @@ end
 
 
 pro pp_mapwidget::eventhandler,event
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 ename=strlowcase(event.name)
 self->getproperty,name=basename
 case ename of
@@ -246,11 +252,35 @@ case ename of
          self.lonslider.setproperty,value=self.lon
       endif else return
     endif
+    if event.type eq 2 then begin ;motion
+      uvb=self.mapstructure.uv_box
+      self.coord.getproperty,position=pos
+      self.draw.getproperty,geo=geo
+      x=(event.x)/(geo.draw_xsize)
+      y=(event.y)/(geo.draw_ysize)
+      xv=(x-pos[0])/(pos[2]-pos[0])
+      yv=(y-pos[1])/(pos[3]-pos[1])
+      x=uvb[0]+xv*(uvb[2]-uvb[0])
+      y=uvb[1]+yv*(uvb[3]-uvb[1])
+      latlon=map_proj_inverse(x,y,map_structure=self.mapstructure)
+      if self.pixel_function && ptr_valid(self.pvals) then imagerange=minmax(*self.pvals,/nan)
+;        vals=(*self.pvals)
+;        szval=size(vals,/dimensions)
+;        xv=xv*szval[0]
+;        yv=yv*szval[1]
+;        val=vals[xv,yv]
+;      endif else val=!values.d_nan
+      self.status.setproperty,text=$;'Value :'+strtrim(val,2)+$
+        ' X: '+strtrim(event.x,2)+' Y: '+strtrim(event.y,2)+$
+        ' Lon: '+strtrim(-latlon[0],2)+' Lat: '+strtrim(latlon[1],2)+$
+        (n_elements(imagerange) ? (' Image range: '+strtrim(imagerange[0],2)+' '+strtrim(imagerange[1],2)) : '')
+      return
+    endif
   end
   basename+'_projection' : self.proj=event.index
   basename+'_background' : self.bmap=event.index
   basename+'_precision' : self.precision=event.index
-  basename+'_mode' : begin
+  basename+'_mode' : begin 
     self.cube=event.index eq 0
     self.selected_pixels=event.index eq 1
     self.pixel_function=event.index eq 2
@@ -291,7 +321,7 @@ par->eventhandler,event
 end
 
 pro pp_mapwidget::getproperty,cube=cube,selected_pixels=selected_pixels,pixel_function=pixel_function,_ref_extra=rex
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 if (arg_present(cube)) then cube=self.cube
 if (arg_present(selected_pixels)) then cube=self.selected_pixels
 if (arg_present(pixel_function)) then cube=self.pixel_function
@@ -299,7 +329,7 @@ if (n_elements(rex) gt 0) then self->basewidget::getproperty,_strict_extra=rex
 end
 
 pro pp_mapwidget::messagehandler,title,sender=sender,data=data
-compile_opt idl2,hidden
+compile_opt idl2,hidden,logical_predicate
 if (title eq 'cubeselected') then begin
   self.cube=1B & self.selected_pixels=0B & self.pixel_function=0B
   self.mode->setproperty,index=0
@@ -315,13 +345,13 @@ endif
 end
 
 pro pp_mapwidget__define
-compile_opt idl2
+compile_opt idl2,logical_predicate
 void={pp_mapwidget,inherits basewidget,draw:obj_new(),data:ptr_new(),cube:0B,$
  selected_pixels:0B,pixel_function:0B,mapimages:ptr_new(),lat:0.,lon:0.,proj:0,bmap:0,$
  projs:ptr_new(),mapstructure:!map,background:ptr_new(),image:obj_new(),others:obj_new(),$
  clean:0B,iso:ptr_new(),coord:obj_new(),grid:obj_new(),proj_inds:ptr_new(),height:0.,$
  mode:obj_new(),maps:ptr_new(),precision:0B,cubedata:obj_new(),dbobject:obj_new(),surfaceonly:0B,$}
  eval:ptr_new(),pvals:ptr_new(),minim:0d0,maxim:100d0,dragstart:[0L,0L],dragend:[0L,0L],$
- latslider:obj_new(),lonslider:obj_new(),cubesdata:ptr_new()}
+ latslider:obj_new(),lonslider:obj_new(),cubesdata:ptr_new(),status:obj_new()}
  
 end
