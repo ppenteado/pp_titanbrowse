@@ -514,7 +514,7 @@ end
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
 pro pp_editablecube::export,file,format=format
-compile_opt idl2,logical_predicate,hidden
+compile_opt idl2,logical_predicate
 
 format=n_elements(format) ? format : 'fits'
 
