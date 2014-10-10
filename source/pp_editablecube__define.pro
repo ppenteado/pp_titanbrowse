@@ -458,13 +458,16 @@ end
 
 ;+
 ; :Description:
-;    Writes the cube in the object to a file.
+;    Writes the cube in the object to a cube file.
 ;
 ; :Params:
 ;    filename, in, optional
 ;      The name of the file to which the cube will be written. Optional only
-;      of the object already contains a name in the newfile field from a previous
+;      if the object already contains a name in the newfile field from a previous
 ;      call of write.
+; :Keywords:
+;    format : in, optional, default='fits'
+;      File format to make. Valid options are 'fits' or 'csv'.
 ;
 ; :Examples:
 ;    See the example on pp_editablecube__define.
@@ -494,6 +497,51 @@ writeu,unit,*self.raw
 ;Pad to the number of binary records
 point_lun,unit,self.info.recordbytes*self.info.filerecords
 free_lun,unit 
+
+end
+
+;+
+; :Description:
+;    Exports the cube in the object to a fits or csv file.
+;
+; :Params:
+;    file, in, required
+;      The name of the file to which the cube will be written.
+;
+; :Examples:
+;    See the example on pp_editablecube__define.
+;
+; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
+;-
+pro pp_editablecube::export,file,format=format
+compile_opt idl2,logical_predicate,hidden
+
+format=n_elements(format) ? format : 'fits'
+
+c=self
+
+templ={}
+if c.bands then begin
+  bandnames=strtrim(sindgen(c.bands),2)
+  ml=max(strlen(bandnames))
+  bandnames='BAND_'+string(sindgen(c.bands),format='(I0'+strtrim(ml,2)+')')
+  foreach bn,bandnames do templ=create_struct(templ,bn,0d0)
+endif else templ={}
+
+foreach bn,c.backnames do templ=create_struct(templ,idl_validname(bn,/convert_all),0d0)
+
+cubestruct=replicate(templ,c.lines*c.samples)
+if c.bands then begin
+  core=reform(c.core,c.samples*c.lines,c.bands)
+  for i=0,c.bands-1 do cubestruct.(i)=core[*,i]
+endif
+if c.nback then begin
+  backplanes=reform(c.backplanes,c.lines*c.samples,c.nback)
+  for i=0,c.nback-1 do cubestruct.(i+c.bands)=backplanes[*,i]
+endif
+
+if strlowcase(format) eq 'fits' then mwrfits,cubestruct,file,/create
+if strlowcase(format) eq 'csv' then write_csv_pp,file,cubestruct,/titles
 
 end
 
@@ -553,6 +601,10 @@ end
 ;    To write the edited cube to 'testedit.cub'::
 ;    
 ;      a->write,'testedit.cub'
+;
+;    To write the edited cube to 'testedit.fits'::
+;
+;      a->export,'testedit.cub'
 ;      
 ;    Destroy the object when done with it::
 ;    
