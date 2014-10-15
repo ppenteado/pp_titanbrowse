@@ -30,6 +30,13 @@ libdata[libdataItem++] = new Array("./pp_buffered_vector__define.html", "pp_buff
   
   
 
+libdata[libdataItem++] = new Array("./pp_cube_extract.html", "pp_cube_extract.pro", '.pro file in <a href="./dir-overview.html">./ directory</a>', "pp_cube_extract.pro", "", "", "", "", "          -1", "");
+  
+  
+  libdata[libdataItem++] = new Array("./pp_cube_extract.html#pp_cube_extract", "pp_cube_extract", 'routine in <a href="./pp_cube_extract.html">pp_cube_extract.pro</a>', "pp_cube_extract.pro", "Paulo Penteado (pp.penteado@gmail.com), May/2010 (refit to cube_extract from May/2008)  ", "pp_cube_extract", "  Refit of cube_extract.pro, to read the cubes using pp_readcube objects instead of ISIS.    Works similar to exttract3.f:    Reads the given cube and makes outfile with geometrical information   and a 2 column text file for each spectrum in the selection.    If no selection specified, the whole cube is used.    Selections are made with corners or list, described below.    Pixels out of the disk (as determined by 'LATITUDE') are not included in the output, unless nosel is set.    All pixel numbers given are vims numbers: [1,1] is the top left pixel.   ", "corners      A 4 element vector [xi,yi,xf,yf] specifying the region to select.  list      A 2xn array with x,y pixel numbers to select.  nan      Specifies what to use for pixels with special value. Defaults to !values.f_nan if oldfmt is not set,       'NUL' otherwise.  oldfmt      If set, forces outfile to be formatted as                 Filename      x      y      LATITUDE     LONGITUDE   PHASE_ANGLENCIDENCE_ANGLEEMISSION_ANGLE     DELTA_PHI        And forces nan='NUL', for backwards compatibility with extract3.f.  nosep      If set, does not make the individual ASCII files for each spectrum.   nosel      If set, returns all pixels in the selected region, not just those that fall on the surface.       If set, but the cube does not contain a 'LATITUDE' backplane, this is reset to 0.   cubefile      Passed to pp_readcube. The name of the file that contains the cube.  outfile      The name of the file where the geometrical information will be written to.   ", "          -1", "pp_readcube__define, pp_getcubeheadervalue, pp_extractfields, pp_buffered_vector   ");
+  
+  
+
 libdata[libdataItem++] = new Array("./pp_cubecollection__define.html", "pp_cubecollection__define.pro", '.pro file in <a href="./dir-overview.html">./ directory</a>', "pp_cubecollection__define.pro", "Paulo Penteado (pp.penteado@gmail.com), Nov/2009  ", "", " ", "", "          -1", "pp_editablecube__define, pp_getcubeheadervalue, pp_extractfields, pp_setcubeheadervalue, pp_readcube__define   ");
   
   
