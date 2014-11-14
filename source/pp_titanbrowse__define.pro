@@ -112,7 +112,7 @@ compile_opt idl2,logical_predicate
   endfor
 end
 
-pro pp_titanbrowse::selectcubes,iexpr,all=all,none=none,count=count,pixelsselected=pixsel,bytable=table
+pro pp_titanbrowse::selectcubes,iexpr,all=all,none=none,count=count,pixelsselected=pixsel,bytable=table,wholecubes=wholecubes
 ;Changes the current cube selection, to all cubes or no cubes, or filter the selection with the given expression.
 ;iexpr must already be in the internal format (expressions built with aliases must be parsed to make them valid here).
 compile_opt idl2
@@ -136,6 +136,10 @@ if bytable gt 0 then begin
     pstart[idbi]=tmp2 
   endforeach
   self.selectpixels,/none
+  if keyword_set(wholecubes) then begin
+    self.selectpixels,/all
+    return
+  endif
   dbselpixs=hash(dl.keys())
   foreach cube,cube_names,icube do begin
     pixels=table[l[cube]]
