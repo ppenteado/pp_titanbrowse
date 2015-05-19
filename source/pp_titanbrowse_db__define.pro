@@ -229,11 +229,18 @@ compile_opt idl2
 ptr_free,*self.pbands,*self.pbacks
 end
 
-pro pp_titanbrowse_db::getproperty,std=std,pstart=pstart,used_memory=used_memory
+pro pp_titanbrowse_db::getproperty,std=std,pstart=pstart,used_memory=used_memory,revs=revs
 compile_opt idl2
 if arg_present(std) then std=self.std
 if arg_present(pstart) then pstart=self.pstart
 if arg_present(used_memory) then used_memory=self.usedmem
+if arg_present(revs) then begin
+  cmd=self.getcmd()
+  revs=(*cmd).rev
+  s=sort(revs)
+  u=uniq(revs,s)
+  revs=revs[u]
+endif
 end
 
 pro pp_titanbrowse_db::cleanup
