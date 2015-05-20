@@ -235,11 +235,13 @@ if arg_present(std) then std=self.std
 if arg_present(pstart) then pstart=self.pstart
 if arg_present(used_memory) then used_memory=self.usedmem
 if arg_present(revs) then begin
+  if ~obj_valid(self.revh) then begin
   cmd=self.getcmd()
   revs=(*cmd).rev
-  s=sort(revs)
-  u=uniq(revs,s)
-  revs=revs[u]
+  self.revh=pp_locate(revs,unique_ind=revsu)
+  self.revsu=ptr_new(revs[revsu])
+  endif
+  revs=*(self.revsu)
 endif
 end
 
@@ -257,5 +259,5 @@ pro pp_titanbrowse_db__define
 compile_opt idl2
 void={pp_titanbrowse_db,inherits pp_titanbrowse_metadb,dbfile:'',npixels:0L,$
  pstart:ptr_new(),odbsav:obj_new(),coreheapinds:ptr_new(),backheapinds:ptr_new(),$
- pbands:ptr_new(),pbacks:ptr_new(),usedmem:0ULL}
+ pbands:ptr_new(),pbacks:ptr_new(),usedmem:0ULL,revh:obj_new(),revsu:ptr_new()}
 end
