@@ -230,7 +230,7 @@ ptr_free,*self.pbands,*self.pbacks
 end
 
 pro pp_titanbrowse_db::getproperty,std=std,pstart=pstart,used_memory=used_memory,$
-  revs=revs,seqs=seqs
+  revs=revs,seqs=seqs,seqh=seqh
 compile_opt idl2
 if arg_present(std) then std=self.std
 if arg_present(pstart) then pstart=self.pstart
