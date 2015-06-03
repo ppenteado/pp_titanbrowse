@@ -229,7 +229,8 @@ compile_opt idl2
 ptr_free,*self.pbands,*self.pbacks
 end
 
-pro pp_titanbrowse_db::getproperty,std=std,pstart=pstart,used_memory=used_memory,revs=revs,seqs=seqs
+pro pp_titanbrowse_db::getproperty,std=std,pstart=pstart,used_memory=used_memory,$
+  revs=revs,seqs=seqs
 compile_opt idl2
 if arg_present(std) then std=self.std
 if arg_present(pstart) then pstart=self.pstart
@@ -243,17 +244,18 @@ if arg_present(revs) then begin
   endif
   revs=*(self.revsu)
 endif
-if arg_present(seqs) then begin
+if arg_present(seqs) || arg_present(seqh) then begin
   if ~obj_valid(self.seqh) then begin
     cmd=self.getcmd()
-    seqs=(*cmd).seq_title
-    self.seqh=pp_locate(seqs,unique_ind=seqsu)
-    self.seqsu=ptr_new(seqs[seqsu])
+    sqs=(*cmd).seq_title
+    self.seqh=pp_locate(sqs,unique_ind=seqsu)
+    self.seqsu=ptr_new(sqs[seqsu])
   endif
   sqs=*(self.seqsu)
   if n_elements(seqs) then seqs=sqs[where(strmatch(sqs,'VIMS_'+seqs+'_*'),/null)] else seqs=sqs
-  
+  if arg_present(seqh) then seqh=(self.seqh)[*]
 endif
+
 end
 
 pro pp_titanbrowse_db::cleanup
