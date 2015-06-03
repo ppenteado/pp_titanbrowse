@@ -229,7 +229,7 @@ compile_opt idl2
 ptr_free,*self.pbands,*self.pbacks
 end
 
-pro pp_titanbrowse_db::getproperty,std=std,pstart=pstart,used_memory=used_memory,revs=revs
+pro pp_titanbrowse_db::getproperty,std=std,pstart=pstart,used_memory=used_memory,revs=revs,seqs=seqs
 compile_opt idl2
 if arg_present(std) then std=self.std
 if arg_present(pstart) then pstart=self.pstart
@@ -242,6 +242,17 @@ if arg_present(revs) then begin
   self.revsu=ptr_new(revs[revsu])
   endif
   revs=*(self.revsu)
+endif
+if arg_present(seqs) then begin
+  if ~obj_valid(self.seqh) then begin
+    cmd=self.getcmd()
+    seqs=(*cmd).seq_title
+    self.seqh=pp_locate(seqs,unique_ind=seqsu)
+    self.seqsu=ptr_new(seqs[seqsu])
+  endif
+  sqs=*(self.seqsu)
+  if n_elements(seqs) then seqs=sqs[where(strmatch(sqs,'VIMS_'+seqs+'_*'),/null)] else seqs=sqs
+  
 endif
 end
 
@@ -259,5 +270,6 @@ pro pp_titanbrowse_db__define
 compile_opt idl2
 void={pp_titanbrowse_db,inherits pp_titanbrowse_metadb,dbfile:'',npixels:0L,$
  pstart:ptr_new(),odbsav:obj_new(),coreheapinds:ptr_new(),backheapinds:ptr_new(),$
- pbands:ptr_new(),pbacks:ptr_new(),usedmem:0ULL,revh:obj_new(),revsu:ptr_new()}
+ pbands:ptr_new(),pbacks:ptr_new(),usedmem:0ULL,revh:obj_new(),revsu:ptr_new(),$
+ seqh:obj_new(),seqsu:ptr_new()}
 end
