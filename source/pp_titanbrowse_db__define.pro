@@ -259,7 +259,7 @@ if arg_present(cubesh) then begin
   if ~obj_valid(self.cubesh) then begin
     cmd=self.getcmd()
     cubes=(*cmd).file
-    self.cubesh=pp_locate(cubesh)
+    self.cubesh=pp_locate(cubes)
   endif
   cubeshs=self.cubesh[*]
 endif
