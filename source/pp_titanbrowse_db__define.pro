@@ -230,7 +230,7 @@ ptr_free,*self.pbands,*self.pbacks
 end
 
 pro pp_titanbrowse_db::getproperty,std=std,pstart=pstart,used_memory=used_memory,$
-  revs=revs,seqs=seqs,seqh=seqh
+  revs=revs,seqs=seqs,seqh=seqh,cubesh=cubesh
 compile_opt idl2
 if arg_present(std) then std=self.std
 if arg_present(pstart) then pstart=self.pstart
@@ -255,6 +255,14 @@ if arg_present(seqs) || arg_present(seqh) then begin
   if n_elements(seqs) then seqs=sqs[where(strmatch(sqs,'VIMS_'+seqs+'_*'),/null)] else seqs=sqs
   if arg_present(seqh) then seqh=(self.seqh)[*]
 endif
+if arg_present(cubesh) then begin
+  if ~obj_valid(self.cubesh) then begin
+    cmd=self.getcmd()
+    cubes=(*cmd).file
+    self.cubesh=pp_locate(cubesh)
+  endif
+  cubeshs=self.cubesh[*]
+endif
 
 end
 
@@ -273,5 +281,5 @@ compile_opt idl2
 void={pp_titanbrowse_db,inherits pp_titanbrowse_metadb,dbfile:'',npixels:0L,$
  pstart:ptr_new(),odbsav:obj_new(),coreheapinds:ptr_new(),backheapinds:ptr_new(),$
  pbands:ptr_new(),pbacks:ptr_new(),usedmem:0ULL,revh:obj_new(),revsu:ptr_new(),$
- seqh:obj_new(),seqsu:ptr_new()}
+ seqh:obj_new(),seqsu:ptr_new(),cubesh:obj_new()}
 end
