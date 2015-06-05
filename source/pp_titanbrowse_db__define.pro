@@ -261,7 +261,7 @@ if arg_present(cubesh) then begin
     cubes=(*cmd).file
     self.cubesh=pp_locate(cubes)
   endif
-  cubeshs=self.cubesh[*]
+  cubesh=(self.cubesh)[*]
 endif
 
 end
