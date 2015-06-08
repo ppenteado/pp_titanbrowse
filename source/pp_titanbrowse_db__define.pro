@@ -230,7 +230,7 @@ ptr_free,*self.pbands,*self.pbacks
 end
 
 pro pp_titanbrowse_db::getproperty,std=std,pstart=pstart,used_memory=used_memory,$
-  revs=revs,seqs=seqs,seqh=seqh,cubesh=cubesh
+  revs=revs,seqs=seqs,seqh=seqh,cubesh=cubesh,backinds=backinds
 compile_opt idl2
 if arg_present(std) then std=self.std
 if arg_present(pstart) then pstart=self.pstart
@@ -263,7 +263,10 @@ if arg_present(cubesh) then begin
   endif
   cubesh=(self.cubesh)[*]
 endif
-
+if arg_present(backinds) && ~obj_valid(self.backinds) then begin
+  self.backinds=pp_locate((*self.std.bnames))
+endif
+backinds=(self.backinds)[*]
 end
 
 pro pp_titanbrowse_db::cleanup
@@ -274,6 +277,22 @@ obj_destroy,self.odbsav
 ptr_free,*self.pbands,*self.pbacks,self.pbands,self.pbacks
 end
 
+function pp_titanbrowse_db::_overloadBracketsRightSide, isRange, sub1, $
+  sub2, sub3, sub4, sub5, sub6, sub7, sub8
+compile_opt idl2,logical_predicate,hidden
+ret=!null
+if isa(sub1,/integer) then begin
+  ret=*(self.getband(sub1,/pointer))
+endif
+if isa(sub1,/string) then begin
+  self.getproperty,backinds=bi
+  ind=bi[sub1]
+  ret=*((self.getbackplane(ind,/pointer))[0])
+endif
+if (n_params() gt 2) then ret=ret[sub2]
+return,ret
+end
+
 pro pp_titanbrowse_db__define
 ;Object implementing the pixel database, from a pp_titanbrowse_metadb object.
 ;Contains band/backplane-major vectors of all core bands and backplanes for faster access.
@@ -281,5 +300,5 @@ compile_opt idl2
 void={pp_titanbrowse_db,inherits pp_titanbrowse_metadb,dbfile:'',npixels:0L,$
  pstart:ptr_new(),odbsav:obj_new(),coreheapinds:ptr_new(),backheapinds:ptr_new(),$
  pbands:ptr_new(),pbacks:ptr_new(),usedmem:0ULL,revh:obj_new(),revsu:ptr_new(),$
- seqh:obj_new(),seqsu:ptr_new(),cubesh:obj_new()}
+ seqh:obj_new(),seqsu:ptr_new(),cubesh:obj_new(),inherits IDL_Object,backinds:obj_new()}
 end
