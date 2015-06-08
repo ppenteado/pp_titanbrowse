@@ -169,6 +169,7 @@ end
 function pp_titanbrowse_metadb::getcubevars,level
   ;Retrieves the cube variables tree nodes at the given level
   compile_opt idl2, hidden
+  ret=[]
   c=(*self.cmd)
   if (level eq 0) then begin
     h=orderedhash(c)
@@ -178,6 +179,26 @@ function pp_titanbrowse_metadb::getcubevars,level
   if (level eq 1) then begin
     h=orderedhash(c.back_max)
     ret=(h.keys()).toarray()
+  endif
+  return,ret
+end
+
+function pp_titanbrowse_metadb::getpixelvars,level
+  ;Retrieves the cube variables tree nodes at the given level
+  compile_opt idl2, hidden
+  ret=[]
+  if (level eq "") then begin
+    ret=["Core bands","Backplanes"]
+  endif
+  if (level eq "Backplanes") then begin
+    c=(*self.cmd)
+    h=orderedhash(c.back_max)
+    ret=(h.keys()).toarray()
+  endif
+  if (level eq "Core bands") then begin
+    bands=self.std.bands
+    wavs=*(self.std.wavs)
+    ret=strtrim(sindgen(bands),2)+" ("+string(wavs,format='(F6.4)')+" µm)"
   endif
   return,ret
 end
