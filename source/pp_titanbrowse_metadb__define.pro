@@ -166,6 +166,23 @@ compile_opt idl2, hidden
 return,self.cmd
 end
 
+function pp_titanbrowse_metadb::getncmd
+  ;Retrieves the pointer to the cube metadata structure
+  compile_opt idl2, hidden
+  if ~ptr_valid(ncmd) then begin
+    cmd=self.getcmd()
+    h=orderedhash(*cmd)
+    h.remove,["BACK_MIN","BACK_MAX"]
+    ncmd=pp_structtransp(h.tostruct())
+    bmax=(*cmd).back_max
+    bmin=(*cmd).back_min
+    foreach tag,tag_names(bmax),itag do ncmd=pp_appendcolumn(ncmd,"BACK_MAX_"+tag,bmax.(itag))
+    foreach tag,tag_names(bmin),itag do ncmd=pp_appendcolumn(ncmd,"BACK_MIN_"+tag,bmin.(itag))
+    self.ncmd=ptr_new(ncmd)
+  endif else ncmd=*(self.ncmd)
+  return,ncmd
+end
+
 function pp_titanbrowse_metadb::getcubevars,level
   ;Retrieves the cube variables tree nodes at the given level
   compile_opt idl2, hidden
@@ -215,5 +232,5 @@ pro pp_titanbrowse_metadb__define
 compile_opt idl2
 void={pp_titanbrowse_metadb,inherits pp_cubecollection,modind:0L,cmd:ptr_new(),$
  idstring:strarr(2),std:{pp_titanbrowse_metadb_std,bands:0L,nback:0L,wavs:ptr_new(),$
- bnames:ptr_new(),tnames:ptr_new(),unit:'',bunits:ptr_new(),type:0,fill:ptr_new()}}
+ bnames:ptr_new(),tnames:ptr_new(),unit:'',bunits:ptr_new(),type:0,fill:ptr_new()},ncmd:ptr_new()}
 end
