@@ -166,6 +166,22 @@ compile_opt idl2, hidden
 return,self.cmd
 end
 
+function pp_titanbrowse_metadb::getcubevars,level
+  ;Retrieves the cube variables tree nodes at the given level
+  compile_opt idl2, hidden
+  c=(*self.cmd)
+  if (level eq 0) then begin
+    h=orderedhash(c)
+    ;h.remove,["BACK_MAX","BACK_MIN"]
+    ret=(h.keys()).toarray()
+  endif
+  if (level eq 1) then begin
+    h=orderedhash(c.back_max)
+    ret=(h.keys()).toarray()
+  endif
+  return,ret
+end
+
 pro pp_titanbrowse_metadb::cleanup
 compile_opt idl2,hidden
 self->pp_cubecollection::cleanup
