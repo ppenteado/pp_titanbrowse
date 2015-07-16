@@ -6,13 +6,14 @@
 ;-
 
 function pp_titanbrowse_metadb::init,modelindex=modind,build_db=build_db,$
- savefile,build_collection=build_col,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress
+ savefile,build_collection=build_col,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress,$
+ _ref_extra=ex
 compile_opt idl2
 
 compress=n_elements(compress) eq 1 ? compress : 1B
 
 ;Initialize collection object
-ret=self->pp_cubecollection::init(savefile,build=build_col,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress)
+ret=self->pp_cubecollection::init(savefile,build=build_col,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress,_strict_extra=ex)
 if (ret eq 0) then return,ret
 ;Defaults
 modind=n_elements(modind) eq 1 ? modind : 0
