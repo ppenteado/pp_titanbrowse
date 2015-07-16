@@ -5,14 +5,14 @@
 ; 
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Nov/2009
 ; 
-; :Version: 20110718
+; :Version: 20141114
 ; 
 ;-
 
 function pp_titanbrowse::init,mdbfiles,vis=vis
 compile_opt idl2
 ret=0
-self.version='20140420'
+self.version='20141114'
 ;Defaults
 vis=n_elements(vis) eq 1 ? vis : 0
 channel=vis ? 'vis' : 'ir'
@@ -96,10 +96,67 @@ pixdata={pp_titanbrowse_pixdata,core:dblarr((*self.std).bands),backplanes:btmp,c
 return,ret
 end
 
-pro pp_titanbrowse::selectcubes,iexpr,all=all,none=none,count=count,pixelsselected=pixsel
+pro pp_titanbrowse::indexcubes
+compile_opt idl2,logical_predicate
+  self.cubehash=hash()
+  for i=0,self.nfiles-1 do begin
+    files=(*self.podb)[i]->filenames(ncubes=ncubes)
+    (*self.podb)[i]->getproperty,pstart=pstart
+    ps=*pstart
+    foreach file,files,ifile do begin
+      tmp={pp_titanbrowse_cubemd}
+      tmp.dbindex=i
+      tmp.pstart=ps[ifile]
+      self.cubehash[file]=tmp
+    endforeach
+  endfor
+end
+
+pro pp_titanbrowse::selectcubes,iexpr,all=all,none=none,count=count,pixelsselected=pixsel,bytable=table,wholecubes=wholecubes
 ;Changes the current cube selection, to all cubes or no cubes, or filter the selection with the given expression.
 ;iexpr must already be in the internal format (expressions built with aliases must be parsed to make them valid here).
 compile_opt idl2
+
+bytable=n_elements(table)
+if bytable gt 0 then begin
+  l=pp_locate(table.cubefile)
+  cube_names=(l.keys()).toarray()
+  ci=self.getcubeinfo(cube_name=cube_names)
+  dl=pp_locate(ci.dbind)
+  self.selectcubes,/none
+  pstart=hash()
+  foreach dbi,dl,idbi do begin
+    (*self.nselcubes)[idbi]=n_elements(dbi)
+    (*self.selcubes)[idbi]=ptr_new(ci[dbi].cubeind)
+    s=sort(ci[dbi].cubeind)
+    citmp=(ci[dbi])[s]
+    tmp=total(citmp.pixels,/cumulative,/integer)-citmp[0].pixels
+    tmp2=hash()
+    foreach cube,citmp,icube do tmp2[cube.cubeind]=tmp[icube]
+    pstart[idbi]=tmp2 
+  endforeach
+  self.selectpixels,/none
+  if keyword_set(wholecubes) then begin
+    self.selectpixels,/all
+    return
+  endif
+  dbselpixs=hash(dl.keys())
+  foreach cube,cube_names,icube do begin
+    pixels=table[l[cube]]
+    pixinds=pixels.x+ci[icube].samples*pixels.z
+    ;(*self.podb)[ci[icube].dbind]->getproperty,pstart=pstart
+    ;pixstosel=(*pstart)[ci[icube].cubeind]+pixinds
+    pixstosel=(pstart[ci[icube].dbind])[ci[icube].cubeind]+pixinds
+    dbselpixs[ci[icube].dbind]=[dbselpixs[ci[icube].dbind],pixstosel]
+  endforeach
+  whereres=hash()
+  foreach dbselpix,dbselpixs,idbsel do begin
+    pixtosel=dbselpix[sort(dbselpix)]
+    whereres[idbsel]=pixtosel
+  endforeach
+  self.selectpixels,/all
+  self.selectpixels,whereres=whereres
+endif
 
 if keyword_set(none) then begin ;If selection is to be cleared
   (*self.nselcubes)[*]=0L
@@ -152,10 +209,10 @@ endif else if (n_elements(iexpr) eq 1) then begin ;If filtering from given expre
 endif
 count=total(*self.nselcubes,/integer)
 ;Clear pixel selections
-self->selectpixels,/none
+if ~bytable then self->selectpixels,/none
 end
 
-pro pp_titanbrowse::selectpixels,iexpr,all=all,none=none,count=count,eval=eval
+pro pp_titanbrowse::selectpixels,iexpr,all=all,none=none,count=count,eval=eval,whereres=whereres
 ;Changes the current pixel selection, to all pixels or no pixels, or filter the selection with the given expression.
 ;iexpr must already be in the internal format (expressions built with aliases must be parsed to make them valid here).
 compile_opt idl2
@@ -187,7 +244,7 @@ endif else if keyword_set(all) then begin ;If selecting everything
       tmp2=lindgen(pixels[sel[j]])
       ;selpixels[tmp[j]]=tmp2+(*pstart)[sel[j]]
       selpixels[k]=tmp2+(*pstart)[sel[j]]
-      ;pixxz[tmp[j]*2]=reform(array_indices(dims,tmp2,/dim),2*(*pcmd).pixels[sel[j]])
+      ;pixxz[tmp[j]*2]=reform(array_indices(dims,tmp2,/dim),2*(*pcmcube_namesd).pixels[sel[j]])
       pixxz[k*2]=reform(array_indices(dims,tmp2,/dim),2*pixels[sel[j]])
       k+=pixels[sel[j]]
     endfor
@@ -200,16 +257,21 @@ endif else if keyword_set(all) then begin ;If selecting everything
     ptr_free,(*self.selpixels_xz)[i]
     (*self.selpixels_xz)[i]=ptr_new(pixxz,/no_copy)
   endif
-endif else if (n_elements(iexpr) eq 1) then begin ;If filtering from given expression
-  expr=strtrim(iexpr,2)
+endif else if ((n_elements(iexpr) eq 1) or n_elements(whereres) gt 0) then begin ;If filtering from given expression
+  if (n_elements(iexpr) eq 1) then expr=strtrim(iexpr,2)
   for i=0,self.nfiles-1 do if ((*self.nselpixels)[i] gt 0) then begin ;Skip files with no pixels selected
 ;Make sel and to be used in expr
     sel=*((*self.selpixels)[i]) ;Indexes of selected pixels
-    tmp=execute('nsel='+expr)
+    if (n_elements(whereres) gt 0) then begin
+      w=whereres[i]
+      count=long(n_elements(w))
+    endif else begin
+      tmp=execute('nsel='+expr)
 ;Make the new selection
-    if tmp then w=where(nsel,count,/l64) else begin
-      print,'pp_titanbrowse::selectpixels: Expression evaluation error'
-      break
+      if tmp then w=where(nsel,count,/l64) else begin
+        print,'pp_titanbrowse::selectpixels: Expression evaluation error'
+        break
+      endelse
     endelse
     (*self.nselpixels)[i]=count
     ptr_free,(*self.selpixels)[i]
@@ -393,7 +455,7 @@ end
 
 pro pp_titanbrowse::getproperty,cubelist=cubelist,pixellist=pixellist,update=update,$
  mdbfiles=mdbfiles,odb=odb,std=std,nselcubes=nselcubes,nselpixels=nselpixels,version=version,$
- used_memory=used_memory,evalres=evalres,cubeevalres=cubeevalres
+ used_memory=used_memory,evalres=evalres,cubeevalres=cubeevalres,cubehash=cubehash
 compile_opt idl2
 
 if arg_present(cubelist) then begin
@@ -459,6 +521,8 @@ if (arg_present(nselcubes)) then nselcubes=long(total(*self.nselcubes))
 if (arg_present(nselpixels)) then nselpixels=long(total(*self.nselpixels))
 
 if (arg_present(version)) then version=self.version
+
+if (arg_present(cubehash)) then cubehash=self.cubehash
 
 if (arg_present(used_memory)) then begin
   used_memory=0ULL
@@ -566,6 +630,29 @@ endif else message,'Invalid selection specification'
 return,ret
 end
 
+function pp_titanbrowse::getpixeldata,pixin
+compile_opt idl2,logical_predicate
+
+np=n_elements(pixin)
+if ~np then return,!null
+
+ret=replicate({pp_titanbrowse_pixdata},np)
+l=pp_locate(pixin.cubefile)
+cube_names=(l.keys()).toarray()
+ci=self.getcubeinfo(cube_name=cube_names)
+
+foreach cube,cube_names,icube do begin
+  self.selectcubes,/all
+  self.selectcubes,"cmd.file eq '"+cube+"'",count=count
+  self.selectpixels,/all,count=count
+  inds=pixin.x+pixin.y*ci[icube].samples
+  print,count
+endforeach
+
+return,ret
+
+end
+
 pro pp_titanbrowse::cleanup
 compile_opt idl2,hidden
 ptr_free,self.mdbfiles,self.std,self.nselcubes,self.nselpixels
@@ -581,9 +668,11 @@ pro pp_titanbrowse__define
 ;Object implementing the new titanbrowse, both the procedural API and GUI.
 ;Initialized from pp_titanbrowse_metadb savefiles.
 compile_opt idl2
+void={pp_titanbrowse_cubemd,dbindex:0L,pstart:0L,npixels:0L,lines:0L,samples:0L}
 void={pp_titanbrowse,version:'',nfiles:0,mdbfiles:ptr_new(),podb:ptr_new(),std:ptr_new(),$
  dbvecs:{pp_titanbrowse_dbvecs,core:ptr_new(),back:ptr_new()},$
  nselcubes:ptr_new(),nselpixels:ptr_new(),selcubes:ptr_new(),selpixels:ptr_new(),$
  selpixels_c:ptr_new(),selpixels_xz:ptr_new(),update:0B,$
- backindex:obj_new(),inherits IDL_Object,evalres:ptr_new(),cubeevalres:ptr_new()}
+ backindex:obj_new(),inherits IDL_Object,evalres:ptr_new(),cubeevalres:ptr_new(),$
+ cubehash:obj_new()}
 end
