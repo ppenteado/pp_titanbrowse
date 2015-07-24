@@ -214,8 +214,8 @@ switch ename of
           self.histowindow=obj
         endif; else begin
           cgset,self.histowindow,/object
-          cghistoplot,histodata,histdata=histdata,/window,title=title,/nan
-          cghistoplot,histodata,histdata=histdata,/nan
+          cghistoplot,histodata,histdata=histdata,/window,title=title,/nan,/fillpolygon
+          cghistoplot,histodata,histdata=histdata,/nan,/fillpolygon
           cgshow,self.histowindow,/object
         ;endelse
         minmaxhd=minmax(histdata)

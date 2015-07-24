@@ -190,7 +190,8 @@ if (self.pixel_function && ptr_valid(self.data)) then begin
   alt2=eval.pixdata.backplanes.alt_2
   alt3=eval.pixdata.backplanes.alt_3
   alt4=eval.pixdata.backplanes.alt_4
-  w=where(not (alt0 or alt1 or alt2 or alt3 or alt4),count)
+  defsysv,'!ppw1',exists=ppw1
+  if  (~ppw1)||!ppw1 then w=where(not (alt0 or alt1 or alt2 or alt3 or alt4),count) else w=lindgen(n_elements(alt0))
   lons=lons[w]
   lats=lats[w]
   vals=eval[w].val
