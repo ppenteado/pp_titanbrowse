@@ -7,14 +7,14 @@
 ; Requires Catalist library, Coyote library (http://www.dfanning.com/catalyst/howtoinstall.html),
 ;    issmap_2009.tiff, issmap_201506.tiff, vimsmap_2009.tiff
 ;    
-; :Version: 20110719
+; :Version: 20151020
 ;
 ; :Author: Paulo Penteado (pp.penteado@gmail.com)
 ;-
 
 function pp_titanbrowse_gui::init,mdbfiles,vis=vis
 compile_opt idl2,logical_predicate
-self.version='20140420'
+self.version='20151020'
 ;Initialize db
 self.db=obj_new('pp_titanbrowse',mdbfiles,vis=vis)
 self.db->getproperty,version=dbversion
