@@ -53,7 +53,7 @@ endif else self.savefile=savefile
 
 idstring='pp_cubecollection_container' ;id to test if savefile was created by this object
 
-catch,error_status
+error_status=0;catch,error_status
 if (error_status ne 0) then begin
   catch,/cancel
   print,'pp_cubecollection::init : Could not read file "',self.savefile,'"'

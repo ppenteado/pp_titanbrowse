@@ -65,7 +65,7 @@ self.std.type=size(tmp,/type)
 case self.std.type of
   4 : self.std.fill=ptr_new(!values.f_nan)
   5 : self.std.fill=ptr_new(!values.d_nan)
-  else: self.std.fill=ptr_new((omodel->getspecial()).null) 
+  else: self.std.fill=ptr_new((omodel->getspecialvalues()).null) 
 endcase
 ;Make a structure for the backplane ranges
 ;void=execute('btmp={'+strjoin(tnames,':!values.d_nan,')+':!values.d_nan}')

@@ -43,7 +43,7 @@ if (n_elements(file) ne 1) then begin
 endif else if (file eq '') then return,ret ;Silently get out to allow the trick in pp_cubecollection::init
 header=obj_new('pp_buffered_vector')
 history=obj_new('pp_buffered_vector')
-catch,error_status
+error_status=0;catch,error_status
 if (error_status ne 0) then begin
   catch,/cancel
   print,'pp_readcube: Cube named "',file,'" could not be read or parsed'
@@ -367,7 +367,7 @@ datatype=size(data,/type)
      if (count gt 0) then data[w]=rep
      sel=(data eq special.null)
      sel=sel or (data eq special.low_repr_sat)
-     sel=sel or (data eq special.low_inst_sat)
+     sel=sel or (data eq special.low_instr_sat)
      sel=sel or (data eq special.high_instr_sat)
      sel=sel or (data eq special.high_repr_sat)
      w=where(sel,count)
@@ -791,13 +791,13 @@ end
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
 function pp_readcube::getfromheader,key,history=hist,$
- count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel
+ count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel,cont=cont
 compile_opt idl2
 
 ;Defaults
 hist=n_elements(hist) eq 1 ? hist : 0
 tmp=hist ? *self.thistory : *self.tlabels
-ret=pp_getcubeheadervalue(tmp,key,count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel)
+ret=pp_getcubeheadervalue(tmp,key,count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel,cont=cont)
 return,ret
 end
 

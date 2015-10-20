@@ -60,12 +60,13 @@
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
 function pp_getcubeheadervalue,header,key,not_trimmed=not_trimmed,count=count,$
- fold_case=fold_case,lines=lines,unquote=unquote,sel=sel
+ fold_case=fold_case,lines=lines,unquote=unquote,sel=sel,continueblank=cont
 compile_opt idl2
 
 ;Defaults
 not_trimmed=n_elements(not_trimmed) eq 1 ? not_trimmed : 0
 unquote=n_elements(unquote) eq 1 ? unquote : 0
+cont=keyword_set(cont)
 
 if (not_trimmed) then begin
 ;If it was not previously trimmed (done this way to avoid copying when already trimmed)
@@ -83,7 +84,11 @@ if (count eq 0) then ret=0 else begin ;Get out if key not found
   tmp=strtrim(strmid(header[w],strpos(header[w],'=')+1),2) ;Get rid of the key part
 ;Determine if value is scalar
   np1=strpos(tmp,'(')
-  if (np1 ne 0) then ret=tmp else begin
+  if (np1 ne 0) then begin
+    ret=tmp
+    ;If value is empty, continue reading from next line if cont is set
+   if cont && strtrim(ret,2) eq '' then ret=strtrim(header[w+1],2)
+  endif else begin
 ;Parse a vector
     np2=strpos(tmp,')')
 ;Determine if it ends on this same line
