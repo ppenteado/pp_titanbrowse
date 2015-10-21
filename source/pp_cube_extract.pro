@@ -67,16 +67,32 @@ nosel=n_elements(nosel) eq 1 ? nosel : 0
 ;readall8,cubefile,data2=d2,wavs=wavs,bn=bn,/dphi,nval=nval,ncore=nc,nback=nb,nlines=nl,nsamples=ns,nosel=nosel
 cube=obj_new('pp_readcube',cubefile)
 cube->getproperty,core=core,wavelengths=wavs,backnames=backnames,bands=nc,lines=nl,samples=ns
+w=where(backnames eq 'LATITUDE',wc)
+if wc eq 0 then begin
+  latname='LAT_0'
+  lonname='LON_0'
+  phasename='PHASE_0'
+  incname='INCIDENCE_0'
+  eminame='EMISSION_0'
+endif else begin
+  latname='LATITUDE'
+  lonname='LONGITUDE'
+  phasename='PHASE_ANGLE'
+  incname='INCIDENCE_ANGLE'
+  eminame='EMISSION_ANGLE'
+endelse
 if (~nosel) then begin ;select only the pixels that fall on the surface
-  lats=cube->getsuffixbyname('LATITUDE')
+  lats=cube->getsuffixbyname(latname)
   w=where((lats ge -9d1) and (lats le 9d1),nval)
 endif else nval=nl*ns
 if (nval eq 0) then begin
   print,'No pixels selected'
   return
 endif
-bn=['LATITUDE','LONGITUDE','SAMPLE_RESOLUTION','LINE_RESOLUTION','PHASE_ANGLE',$
+bno=['LATITUDE','LONGITUDE','SAMPLE_RESOLUTION','LINE_RESOLUTION','PHASE_ANGLE',$
  'INCIDENCE_ANGLE','EMISSION_ANGLE','NORTH_AZIMUTH','AZ_DIF_0'] ;Only include the old usual backplanes
+bn=[latname,lonname,'SAMPLE_RESOLUTION','LINE_RESOLUTION',phasename,$
+ incname,eminame,'NORTH_AZIMUTH','AZ_DIF_0'] ;Only include the old usual backplanes
 nb=n_elements(bn)
 ;Retrieve the selected backplanes
 backdata=cube->getsuffixbyname(bn)
@@ -137,7 +153,7 @@ endif else begin;new format (this can be changed)
   header[0]=string('Filename',format='(A23)')
   header[1]=string('x',format='(A3)')
   header[2]=string('y',format='(A3)')
-  header[3:3+nb-1]=string(bn,format='(A20)')
+  header[3:3+nb-1]=string(bno,format='(A20)')
   fmts=strarr(4)
   fmts[0]='(A23)'
   fmts[1]='(2(1X,I2.2))'
