@@ -619,10 +619,16 @@ if ptr_valid(sufnames) then begin
   csufnames=cases ? *sufnames : strupcase(*sufnames)
   cnames=cases ? names : strupcase(names)
   for i=0,nnames-1 do begin
-    w=where((strpos(csufnames,cnames[i]) ne -1),nw)
-    found[i]=nw
-    index[i]=w[0]
-    if (nw gt 0) then ret[0,0,i]=(*sufvals)[*,*,w[0]] 
+    if (cnames[i]  eq 'X') or (cnames[i]  eq 'Z') then begin
+      if (cnames[i]  eq 'X') then tmp=indgen(self.info.coredims[[0,1]]) mod self.info.coredims[0] 
+      if (cnames[i]  eq 'Z') then tmp=reverse(floor(indgen(self.info.coredims[[0,1]]) / self.info.coredims[0]),2)
+      ret[0,0,i]=tmp+1
+    endif else begin
+      w=where((strpos(csufnames,cnames[i]) ne -1),nw)
+      found[i]=nw
+      index[i]=w[0]
+      if (nw gt 0) then ret[0,0,i]=(*sufvals)[*,*,w[0]]
+    endelse 
   endfor
 endif
 return,ret
