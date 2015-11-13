@@ -43,7 +43,7 @@ if (n_elements(file) ne 1) then begin
 endif else if (file eq '') then return,ret ;Silently get out to allow the trick in pp_cubecollection::init
 header=obj_new('pp_buffered_vector')
 history=obj_new('pp_buffered_vector')
-catch,error_status
+error_status=0;catch,error_status
 if (error_status ne 0) then begin
   catch,/cancel
   print,'pp_readcube: Cube named "',file,'" could not be read or parsed'
@@ -367,7 +367,7 @@ datatype=size(data,/type)
      if (count gt 0) then data[w]=rep
      sel=(data eq special.null)
      sel=sel or (data eq special.low_repr_sat)
-     sel=sel or (data eq special.low_inst_sat)
+     sel=sel or (data eq special.low_instr_sat)
      sel=sel or (data eq special.high_instr_sat)
      sel=sel or (data eq special.high_repr_sat)
      w=where(sel,count)
@@ -377,6 +377,40 @@ datatype=size(data,/type)
 return,data
 end
 
+function pp_readcube::getexerpt
+compile_opt idl2,logical_predicate
+nx=self.info.coredims[0]
+nz=self.info.coredims[1]
+npixels=nx*nz
+ret=replicate({x:0,z:0,lats:dblarr(4)+!values.d_nan,lons:dblarr(4)+!values.d_nan,lat:!values.d_nan,$
+  lon:!values.d_nan,emissions:dblarr(4)+!values.d_nan,phases:dblarr(4)+!values.d_nan,incidences:$
+  dblarr(4)+!values.d_nan,az_difs:dblarr(4)+!values.d_nan,emission:!values.d_nan,phase:!values.d_nan,$
+  incidence:!values.d_nan,az_dif:!values.d_nan},npixels)
+lats=reform(self.getsuffixbyname('LAT_'+strtrim(indgen(5),2)),npixels,5)
+lons=reform(self.getsuffixbyname('LON_'+strtrim(indgen(5),2)),npixels,5)
+emissions=reform(self.getsuffixbyname('EMISSION_'+strtrim(indgen(5),2)),npixels,5)
+phases=reform(self.getsuffixbyname('PHASE_'+strtrim(indgen(5),2)),npixels,5)
+incidences=reform(self.getsuffixbyname('INCIDENCE_'+strtrim(indgen(5),2)),npixels,5)
+az_difs=reform(self.getsuffixbyname('AZ_DIF_'+strtrim(indgen(5),2)),npixels,5)
+x=(indgen(nx)+1)#replicate(1,nz)
+z=replicate(1,nx)#(indgen(nz)+1)
+x=reform(x,npixels)
+z=reform(z,npixels)
+ret.x=x & ret.z=z
+ret.lat=lats[*,0]
+ret.lon=lons[*,0]
+ret.incidence=incidences[*,0]
+ret.phase=phases[*,0]
+ret.emission=emissions[*,0]
+ret.az_dif=az_difs[*,0]
+ret.lats=transpose(lats[*,1:4])
+ret.lons=transpose(lons[*,1:4])
+ret.incidences=transpose(incidences[*,1:4])
+ret.phases=transpose(phases[*,1:4])
+ret.emissions=transpose(emissions[*,1:4])
+ret.az_difs=transpose(az_difs[*,1:4])
+return,ret
+end
 
 ;+
 ; :Description:
@@ -763,13 +797,13 @@ end
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
 function pp_readcube::getfromheader,key,history=hist,$
- count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel
+ count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel,cont=cont
 compile_opt idl2
 
 ;Defaults
 hist=n_elements(hist) eq 1 ? hist : 0
 tmp=hist ? *self.thistory : *self.tlabels
-ret=pp_getcubeheadervalue(tmp,key,count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel)
+ret=pp_getcubeheadervalue(tmp,key,count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel,cont=cont)
 return,ret
 end
 

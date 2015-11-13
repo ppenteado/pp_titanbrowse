@@ -5,16 +5,16 @@
 ;   pp_mapwidget__define,pp_cubewidget__define,pp_spectrumwidget__define.
 ; 
 ; Requires Catalist library, Coyote library (http://www.dfanning.com/catalyst/howtoinstall.html),
-;    issmap_2009.tiff, vimsmap_2009.tiff
+;    issmap_2009.tiff, issmap_201506.tiff, vimsmap_2009.tiff
 ;    
-; :Version: 20110719
+; :Version: 20151020
 ;
 ; :Author: Paulo Penteado (pp.penteado@gmail.com)
 ;-
 
 function pp_titanbrowse_gui::init,mdbfiles,vis=vis
 compile_opt idl2,logical_predicate
-self.version='20140420'
+self.version='20151020'
 ;Initialize db
 self.db=obj_new('pp_titanbrowse',mdbfiles,vis=vis)
 self.db->getproperty,version=dbversion
@@ -43,7 +43,7 @@ rpath=file_dirname(routine_filepath('pp_titanbrowse_gui__define'),/mark_director
 ;maps[1].name='ISS 2007' & maps[1].file=rpath+'issmap_200710.tiff' & maps[1].range=[-180d0,-90d0,180d0,71d0]
 ;maps[2].name='VIMS (Barnes 2009)' & maps[2].file=rpath+'vimsmap_2009.tiff' & maps[2].range=[-181d0,-90d0,181d0,90d0] 
 ;maps[0].name='none'
-maps=['none',rpath+'issmap_2009.tiff',rpath+'vimsmap_2009.tiff']
+maps=['none',rpath+'issmap_201506.tiff',rpath+'vimsmap_2009.tiff',rpath+'issmap_2009.tiff']
 tab4=obj_new('pp_mapwidget',tabw,name='map',title='Map',scr_xsize=DEFXSZ,scr_ysize=DEFYSZ,maps=maps,dbobject=self.db)
 tlb->registerformessage,tab4,'cubeselected'
 ;Fifth tab
