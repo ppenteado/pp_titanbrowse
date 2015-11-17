@@ -125,7 +125,7 @@ compile_opt idl2,logical_predicate
       tmp.dbindex=i
       tmp.pstart=ps[ifile]
       tmp.mdbfile=mdbfiles[i]
-      self.cubehash[file]=tmp
+      (self.cubehash)[file]=tmp
     endforeach
   endfor
 end
