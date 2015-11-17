@@ -23,7 +23,11 @@ if n_elements(cubes) then begin
   if ft then begin
     restore,'pp_titanbrowse_index.sav',/verbose
     mdbfiles=hash()
-    foreach cube,cubes do mdbfiles[(pp_titanbrowse_cubehash[cube]).mdbfile]=!null
+    keys=(pp_titanbrowse_cubehash.keys()).toarray()
+    foreach cube,cubes do begin
+      key=pp_titanbrowse_cubehash.haskey(cube) ? pp_titanbrowse_cubehash[cube] : keys[where(strmatch(keys,'*cube*'))]
+      mdbfiles[(key).mdbfile]=!null
+    endforeach
     mdbfiles=(mdbfiles.keys()).sort()
     nfiles=mdbfiles.count()
     mdbfiles=mdbfiles.toarray()
