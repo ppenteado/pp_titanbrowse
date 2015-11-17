@@ -9,8 +9,8 @@
 ; 
 ;-
 
-function pp_titanbrowse::init,mdbfiles,vis=vis
-compile_opt idl2
+function pp_titanbrowse::init,mdbfiles,vis=vis,cubestoselect=cubes
+compile_opt idl2,logical_predicate
 ret=0
 self.version='20141114'
 ;Defaults
@@ -18,6 +18,17 @@ vis=n_elements(vis) eq 1 ? vis : 0
 channel=vis ? 'vis' : 'ir'
 nfiles=n_elements(mdbfiles)
 mdbfiles=nfiles gt 0 ? mdbfiles : file_search('covims_*_'+channel+'.sav',count=nfiles)
+if n_elements(cubes) then begin
+  ft=file_test('pp_titanbrowse_index.sav')
+  if ft then begin
+    restore,'pp_titanbrowse_index.sav',/verbose
+    mdbfiles=hash()
+    foreach cube,cubes do mdbfiles[(pp_titanbrowse_cubehash[cube]).mdbfile]=!null
+    mdbfiles=(mdbfiles.keys()).sort()
+    nfiles=mdbfiles.count()
+    mdbfiles=mdbfiles.toarray()
+  endif else print,'There is no index file, one will be built'
+endif
 if (nfiles eq 0) then begin
   print,'pp_titanbrowse: No metadata files found or provided'
   return,0
@@ -93,12 +104,18 @@ cubeinfo={pp_titanbrowse_cubeinfo,inherits pp_titanbrowse_cmd,dbfile:'',cubefile
 ;Define type for pixel data
 pixdata={pp_titanbrowse_pixdata,core:dblarr((*self.std).bands),backplanes:btmp,cube:'',x:0L,z:0L}
 
+if n_elements(cubes) && (~ft) then begin
+  self.indexcubes
+  print,'Saving cube index to file pp_titanbrowse_index.sav'
+  self.saveindex
+endif
 return,ret
 end
 
 pro pp_titanbrowse::indexcubes
 compile_opt idl2,logical_predicate
   self.cubehash=hash()
+  mdbfiles=*self.mdbfiles
   for i=0,self.nfiles-1 do begin
     files=(*self.podb)[i]->filenames(ncubes=ncubes)
     (*self.podb)[i]->getproperty,pstart=pstart
@@ -107,9 +124,18 @@ compile_opt idl2,logical_predicate
       tmp={pp_titanbrowse_cubemd}
       tmp.dbindex=i
       tmp.pstart=ps[ifile]
+      tmp.mdbfile=mdbfiles[i]
       self.cubehash[file]=tmp
     endforeach
   endfor
+end
+
+pro pp_titanbrowse::saveindex,file
+compile_opt idl2,logical_predicate
+file=n_elements(file) ? file : 'pp_titanbrowse_index.sav'
+if ~obj_valid(self.cubehash) then self.indexcubes
+pp_titanbrowse_cubehash=self.cubehash
+save,file=file,pp_titanbrowse_cubehash
 end
 
 pro pp_titanbrowse::selectcubes,iexpr,all=all,none=none,count=count,pixelsselected=pixsel,bytable=table,wholecubes=wholecubes
@@ -653,6 +679,8 @@ return,ret
 
 end
 
+
+
 pro pp_titanbrowse::cleanup
 compile_opt idl2,hidden
 ptr_free,self.mdbfiles,self.std,self.nselcubes,self.nselpixels
@@ -668,7 +696,7 @@ pro pp_titanbrowse__define
 ;Object implementing the new titanbrowse, both the procedural API and GUI.
 ;Initialized from pp_titanbrowse_metadb savefiles.
 compile_opt idl2
-void={pp_titanbrowse_cubemd,dbindex:0L,pstart:0L,npixels:0L,lines:0L,samples:0L}
+void={pp_titanbrowse_cubemd,dbindex:0L,pstart:0L,npixels:0L,lines:0L,samples:0L,mdbfile:''}
 void={pp_titanbrowse,version:'',nfiles:0,mdbfiles:ptr_new(),podb:ptr_new(),std:ptr_new(),$
  dbvecs:{pp_titanbrowse_dbvecs,core:ptr_new(),back:ptr_new()},$
  nselcubes:ptr_new(),nselpixels:ptr_new(),selcubes:ptr_new(),selpixels:ptr_new(),$
