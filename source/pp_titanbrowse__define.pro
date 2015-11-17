@@ -679,7 +679,18 @@ return,ret
 
 end
 
-
+function pp_titanbrowse::_overloadBracketsRightSide, isRange, sub1, $
+  sub2, sub3, sub4, sub5, sub6, sub7, sub8
+compile_opt idl2,logical_predicate
+if isRange then return,!null
+ret=list()
+foreach cube,sub1 do begin
+  self.selectcubes,/all
+  self.selectcubes,'strmatch(cmd.file,"*'+cube+'*")'
+  ret.add,reform(self.getselectedcubes()),/extract
+endforeach
+return,ret.toarray()
+end
 
 pro pp_titanbrowse::cleanup
 compile_opt idl2,hidden
