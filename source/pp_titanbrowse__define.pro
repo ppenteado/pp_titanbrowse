@@ -25,8 +25,9 @@ if n_elements(cubes) then begin
     mdbfiles=hash()
     keys=(pp_titanbrowse_cubehash.keys()).toarray()
     foreach cube,cubes do begin
-      key=pp_titanbrowse_cubehash.haskey(cube) ? pp_titanbrowse_cubehash[cube] : keys[where(strmatch(keys,'*cube*'))]
-      mdbfiles[(pp_titanbrowse_cubehash[key]).mdbfile]=!null
+      wcount=1
+      key=pp_titanbrowse_cubehash.haskey(cube) ? cube : keys[where(strmatch(keys,'*'+cube+'*'),wcount)]
+      if wcount then mdbfiles[(pp_titanbrowse_cubehash[key[0]]).mdbfile]=!null
     endforeach
     mdbfiles=(mdbfiles.keys()).sort()
     nfiles=mdbfiles.count()
