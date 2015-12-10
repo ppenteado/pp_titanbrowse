@@ -29,9 +29,12 @@ if n_elements(cubes) then begin
       key=pp_titanbrowse_cubehash.haskey(cube) ? cube : keys[where(strmatch(keys,'*'+cube+'*'),wcount)]
       if wcount then mdbfiles[(pp_titanbrowse_cubehash[key[0]]).mdbfile]=!null
     endforeach
-    mdbfiles=(mdbfiles.keys()).sort()
-    nfiles=mdbfiles.count()
-    mdbfiles=mdbfiles.toarray()
+    ;mdbfiles=(mdbfiles.keys()).sort()
+    ;nfiles=mdbfiles.count()
+    ;mdbfiles=mdbfiles.toarray()
+    mdbfiles=(mdbfiles.keys()).toarray()
+    mdbfiles=mdbfiles[sort(mdbfiles)]
+    nfiles=n_elements(mdbfiles)
   endif else print,'There is no index file, one will be built'
 endif
 if (nfiles eq 0) then begin
