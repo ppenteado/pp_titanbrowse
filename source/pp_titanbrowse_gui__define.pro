@@ -113,7 +113,7 @@ switch ename of
   end
   'cube_tree': begin ;Top level tree events (files)
     event.id->getproperty,uvalue=uv,expanded=exp
-    if (exp) then begin
+    if (exp) or ((event.event_name eq 'WIDGET_TREE_SEL')&&(event.clicks eq 2)) then begin
       if (size(uv,/type) ne 7) then begin
         self.db->getproperty,odb=odb
         cmd=*(odb[uv]->getcmd())
@@ -129,7 +129,7 @@ switch ename of
   end
   'cube_tree_rev': begin ;Secoond level tree events (revs)
     event.id->getproperty,uvalue=uv,expanded=exp
-    if (exp) then begin
+    if (exp) or ((event.event_name eq 'WIDGET_TREE_SEL')&&(event.clicks eq 2)) then begin
       if (size(uv,/type) ne 7) then begin
         titles=(*uv.pcmd).seq_title[uv.ri]
         s=sort(titles)
@@ -145,7 +145,7 @@ switch ename of
   end
   'cube_tree_seqt': begin ;Third level tree events (seq_titles)
     event.id->getproperty,uvalue=uv,expanded=exp
-    if (exp) then begin
+    if (exp) or ((event.event_name eq 'WIDGET_TREE_SEL')&&(event.clicks eq 2)) then begin
       if (size(uv,/type) ne 7) then begin
         cubes=(uv.odb->filenames())[uv.ri]
         for i=0L,n_elements(cubes)-1 do void=obj_new('treewidget',event.id,value=cubes[i],$
