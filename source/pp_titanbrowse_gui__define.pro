@@ -124,6 +124,7 @@ switch ename of
           uvalue={pcmd:ptr_new(cmd),ri:ri[ri[i]:ri[i+1]-1],file:uv,odb:odb[uv]},name='cube_tree_rev',/folder)
         event.id->setproperty,uvalue=revs
       endif
+      if ~exp then event.id->setproperty,expanded=1
     endif
     break
   end
@@ -140,6 +141,7 @@ switch ename of
          uvalue={ri:uv.ri[ri[ri[i]:ri[i+1]-1]],ind:i,odb:uv.odb,file:uv.file},name='cube_tree_seqt',/folder)
         event.id->setproperty,uvalue=utitles
       endif
+      if ~exp then event.id->setproperty,expanded=1
     endif
     break
   end
@@ -152,6 +154,7 @@ switch ename of
          uvalue={ind:uv.ri[i],file:uv.file},name='cube_tree_cube')
         event.id->setproperty,uvalue=cubes
       endif
+      if ~exp then event.id->setproperty,expanded=1
     endif
     break
   end
