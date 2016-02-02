@@ -526,13 +526,15 @@ endif
 
 if arg_present(lats) then begin
   lats=self[['lat_1','lat_2','lat_3','lat_4']]
-  lats=reform(lats,self.npixels,4)
+  self.getproperty,npixels=np
+  lats=reform(lats,np,4)
   lats=transpose(lats)
 endif
 
 if arg_present(lons) then begin
   lons=self[['lon_1','lon_2','lon_3','lon_4']]
-  lons=reform(lons,self.npixels,4)
+  self.getproperty,npixels=np
+  lons=reform(lons,np,4)
   lons=transpose(lons)
 endif
 
