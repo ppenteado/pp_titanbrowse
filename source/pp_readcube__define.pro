@@ -484,7 +484,8 @@ pro pp_readcube::getproperty,all=all,file=file,special=special,labels=labels,his
  core=core,backplanes=backplanes,sideplanes=sideplanes,bottomplanes=bottomplanes,$
  info=info,lines=lines,bands=bands,samples=samples,nback=nback,nside=nside,nbottom=nbottom,$
  rawdata=raw,wavelengths=wavs,backnames=bnames,sidenames=snames,bottomnames=bonames,$
- units=wunits,backunits=bunits,sideunits=sunits,bottomunits=bounits,struct_backplanes=struct_backplanes
+ units=wunits,backunits=bunits,sideunits=sunits,bottomunits=bounits,struct_backplanes=struct_backplanes,$
+ npixels=npixels,lats=lats,lons=lons
 compile_opt idl2
 
 all=arg_present(all)
@@ -499,6 +500,7 @@ if (all || arg_present(bottomplanes)) then bottomplanes=ptr_valid(self.bottompla
 if (all || arg_present(info)) then info=self.info
 if (all || arg_present(lines)) then lines=self.info.coredims[1]
 if (all || arg_present(samples)) then samples=self.info.coredims[0]
+if (all || arg_present(npixels)) then npixels=self.info.coredims[0]*self.info.coredims[1]
 if (all || arg_present(bands)) then bands=self.info.coredims[2]
 if (all || arg_present(nback)) then nback=self.info.suffdims[2]
 if (all || arg_present(nside)) then nside=self.info.suffdims[0]
@@ -520,6 +522,18 @@ if (all || arg_present(struct_backplanes)) then begin
   struct_backplanes=replicate(tmp,self.info.coredims[0],self.info.coredims[1],self.info.suffdims[2])
   for i=0,nt-1 do struct_backplanes[*,*].(i)=(*self.backplanes)[*,*,i]
   endif else struct_backplanes=ptr_new()
+endif
+
+if arg_present(lats) then begin
+  lats=self[['lat_1','lat_2','lat_3','lat_4']]
+  lats=reform(lats,self.npixels,4)
+  lats=transpose(lats)
+endif
+
+if arg_present(lons) then begin
+  lons=self[['lon_1','lon_2','lon_3','lon_4']]
+  lons=reform(lons,self.npixels,4)
+  lons=transpose(lons)
 endif
 
 if all then all={file:file,special:special,labels:labels,history:history,core:core,$

@@ -21,7 +21,7 @@ mdbfiles=nfiles gt 0 ? mdbfiles : file_search('covims_*_'+channel+'.sav',count=n
 if n_elements(cubes) then begin
   ft=file_test('pp_titanbrowse_index.sav')
   if ft then begin
-    restore,'pp_titanbrowse_index.sav',/verbose
+    restore,'pp_titanbrowse_index.sav',/verbose,/relax
     mdbfiles=hash()
     keys=(pp_titanbrowse_cubehash.keys()).toarray()
     foreach cube,cubes do begin
