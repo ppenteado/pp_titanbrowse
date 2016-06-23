@@ -10,8 +10,8 @@
   </head>
   <body>
     <br>
-    <h1>titanbrowse<br>
-    </h1>
+    <h2>titanbrowse<br>
+    </h2>
     titanbrowse is a complete reimplementation of titan_browse, a
     database and visualizer for Cassini VIMS observations of Titan. This
     documentation is still under construction, as is titanbrowse. Since
@@ -682,14 +682,34 @@ href="http://pds-imaging.jpl.nasa.gov/Admin/resources/cd_cassini_vims.html">PDS
       <pre><br></pre>
       <br>
       <br>
-      <br>
+    <h2>Citing this library<br>
+    </h2>
+    If you find that this library was useful in your research, please cite it. The BibTeX code for the current
+    release is<br>
+    <br>
+    <pre><code>
+\@misc{paulo_penteado_2014_12377,
+  author       = {Paulo Penteado},
+  title        = {pp_titanbrowse v1.0.1},
+  month        = oct,
+  year         = 2014,
+  doi          = {10.5281/zenodo.12377},
+  url          = {http://dx.doi.org/10.5281/zenodo.12377}
+}
+</code></pre><br>
+
+
+
+<a href="http://dx.doi.org/10.5281/zenodo.12377"><img src="https://zenodo.org/badge/doi/10.5281/zenodo.12377.svg" alt="10.5281/zenodo.12377"></a>
+
+
       <br>
       <br>
       <br>
       <br>
       Paulo Penteado<br>
       pp.penteado@gmail.com<br>
-      Version 20120916<br>
+      Version 20160622<br>
     </div>
   </body>
 </html>

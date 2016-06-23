@@ -35,11 +35,15 @@
 ;
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Nov/2009
 ;-
-function pp_cubecollection::init,savefile,build=build,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress
+function pp_cubecollection::init,savefile,build=build,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress,$
+  class=class,_ref_extra=ex
 compile_opt idl2
 
 ret=0
 ;Defaults
+
+class=n_elements(class) ? class : 'pp_editablecube'
+
 compress=n_elements(compress) eq 1 ? compress : 1B
 build=n_elements(build) eq 1 ? build : 0
 if (n_elements(savefile) eq 0) then begin
@@ -49,7 +53,7 @@ endif else self.savefile=savefile
 
 idstring='pp_cubecollection_container' ;id to test if savefile was created by this object
 
-catch,error_status
+error_status=0;catch,error_status
 if (error_status ne 0) then begin
   catch,/cancel
   print,'pp_cubecollection::init : Could not read file "',self.savefile,'"'
@@ -66,7 +70,7 @@ endif else begin
     ocubes=objarr(ncubes)
     for i=0,ncubes-1 do begin
       print,'Reading ',cubefiles[i],' (',strcompress(string(i+1,'/',ncubes,')'),/rem)
-      ocubes[i]=obj_new('pp_editablecube',file=cubefiles[i])
+      ocubes[i]=obj_new(class,file=cubefiles[i],_strict_extra=ex)
     endfor
 ;Build index of heap variables, needed to retrieve individual elements of ocube from savefile
     heapinds=long(strsplit(strjoin(string(ocubes,/print)),'<ObjHeapVar',/regex,/extract))

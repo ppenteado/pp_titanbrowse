@@ -5,18 +5,18 @@
 ;   pp_mapwidget__define,pp_cubewidget__define,pp_spectrumwidget__define.
 ; 
 ; Requires Catalist library, Coyote library (http://www.dfanning.com/catalyst/howtoinstall.html),
-;    issmap_2009.tiff, vimsmap_2009.tiff
+;    issmap_2009.tiff, issmap_201506.tiff, vimsmap_2009.tiff
 ;    
-; :Version: 20110719
+; :Version: 20151020
 ;
 ; :Author: Paulo Penteado (pp.penteado@gmail.com)
 ;-
 
-function pp_titanbrowse_gui::init,mdbfiles,vis=vis
+function pp_titanbrowse_gui::init,mdbfiles,vis=vis,_ref_extra=_ex
 compile_opt idl2,logical_predicate
-self.version='20140420'
+self.version='20151020'
 ;Initialize db
-self.db=obj_new('pp_titanbrowse',mdbfiles,vis=vis)
+self.db=obj_new('pp_titanbrowse',mdbfiles,vis=vis,_strict_extra=_ex)
 self.db->getproperty,version=dbversion
 if (~obj_valid(self.db)) then return,0
 ;Set up GUI
@@ -43,7 +43,7 @@ rpath=file_dirname(routine_filepath('pp_titanbrowse_gui__define'),/mark_director
 ;maps[1].name='ISS 2007' & maps[1].file=rpath+'issmap_200710.tiff' & maps[1].range=[-180d0,-90d0,180d0,71d0]
 ;maps[2].name='VIMS (Barnes 2009)' & maps[2].file=rpath+'vimsmap_2009.tiff' & maps[2].range=[-181d0,-90d0,181d0,90d0] 
 ;maps[0].name='none'
-maps=['none',rpath+'issmap_2009.tiff',rpath+'vimsmap_2009.tiff']
+maps=['none',rpath+'issmap_201506.tiff',rpath+'vimsmap_2009.tiff',rpath+'issmap_2009.tiff']
 tab4=obj_new('pp_mapwidget',tabw,name='map',title='Map',scr_xsize=DEFXSZ,scr_ysize=DEFYSZ,maps=maps,dbobject=self.db)
 tlb->registerformessage,tab4,'cubeselected'
 ;Fifth tab
@@ -113,7 +113,7 @@ switch ename of
   end
   'cube_tree': begin ;Top level tree events (files)
     event.id->getproperty,uvalue=uv,expanded=exp
-    if (exp) then begin
+    if (exp) or ((event.event_name eq 'WIDGET_TREE_SEL')&&(event.clicks eq 2)) then begin
       if (size(uv,/type) ne 7) then begin
         self.db->getproperty,odb=odb
         cmd=*(odb[uv]->getcmd())
@@ -124,12 +124,13 @@ switch ename of
           uvalue={pcmd:ptr_new(cmd),ri:ri[ri[i]:ri[i+1]-1],file:uv,odb:odb[uv]},name='cube_tree_rev',/folder)
         event.id->setproperty,uvalue=revs
       endif
+      if ~exp then event.id->setproperty,expanded=1
     endif
     break
   end
   'cube_tree_rev': begin ;Secoond level tree events (revs)
     event.id->getproperty,uvalue=uv,expanded=exp
-    if (exp) then begin
+    if (exp) or ((event.event_name eq 'WIDGET_TREE_SEL')&&(event.clicks eq 2)) then begin
       if (size(uv,/type) ne 7) then begin
         titles=(*uv.pcmd).seq_title[uv.ri]
         s=sort(titles)
@@ -140,18 +141,20 @@ switch ename of
          uvalue={ri:uv.ri[ri[ri[i]:ri[i+1]-1]],ind:i,odb:uv.odb,file:uv.file},name='cube_tree_seqt',/folder)
         event.id->setproperty,uvalue=utitles
       endif
+      if ~exp then event.id->setproperty,expanded=1
     endif
     break
   end
   'cube_tree_seqt': begin ;Third level tree events (seq_titles)
     event.id->getproperty,uvalue=uv,expanded=exp
-    if (exp) then begin
+    if (exp) or ((event.event_name eq 'WIDGET_TREE_SEL')&&(event.clicks eq 2)) then begin
       if (size(uv,/type) ne 7) then begin
         cubes=(uv.odb->filenames())[uv.ri]
         for i=0L,n_elements(cubes)-1 do void=obj_new('treewidget',event.id,value=cubes[i],$
          uvalue={ind:uv.ri[i],file:uv.file},name='cube_tree_cube')
         event.id->setproperty,uvalue=cubes
       endif
+      if ~exp then event.id->setproperty,expanded=1
     endif
     break
   end
@@ -214,8 +217,8 @@ switch ename of
           self.histowindow=obj
         endif; else begin
           cgset,self.histowindow,/object
-          cghistoplot,histodata,histdata=histdata,/window,title=title,/nan
-          cghistoplot,histodata,histdata=histdata,/nan
+          cghistoplot,histodata,histdata=histdata,/window,title=title,/nan,/fillpolygon
+          cghistoplot,histodata,histdata=histdata,/nan,/fillpolygon
           cgshow,self.histowindow,/object
         ;endelse
         minmaxhd=minmax(histdata)

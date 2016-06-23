@@ -6,13 +6,14 @@
 ;-
 
 function pp_titanbrowse_metadb::init,modelindex=modind,build_db=build_db,$
- savefile,build_collection=build_col,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress
+ savefile,build_collection=build_col,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress,$
+ _ref_extra=ex
 compile_opt idl2
 
 compress=n_elements(compress) eq 1 ? compress : 1B
 
 ;Initialize collection object
-ret=self->pp_cubecollection::init(savefile,build=build_col,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress)
+ret=self->pp_cubecollection::init(savefile,build=build_col,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress,_strict_extra=ex)
 if (ret eq 0) then return,ret
 ;Defaults
 modind=n_elements(modind) eq 1 ? modind : 0
@@ -64,7 +65,7 @@ self.std.type=size(tmp,/type)
 case self.std.type of
   4 : self.std.fill=ptr_new(!values.f_nan)
   5 : self.std.fill=ptr_new(!values.d_nan)
-  else: self.std.fill=ptr_new((omodel->getspecial()).null) 
+  else: self.std.fill=ptr_new((omodel->getspecialvalues()).null) 
 endcase
 ;Make a structure for the backplane ranges
 ;void=execute('btmp={'+strjoin(tnames,':!values.d_nan,')+':!values.d_nan}')
@@ -166,6 +167,60 @@ compile_opt idl2, hidden
 return,self.cmd
 end
 
+function pp_titanbrowse_metadb::getncmd
+  ;Retrieves the pointer to the cube metadata structure
+  compile_opt idl2, hidden
+  if ~ptr_valid(ncmd) then begin
+    cmd=self.getcmd()
+    h=orderedhash(*cmd)
+    h.remove,["BACK_MIN","BACK_MAX"]
+    ncmd=pp_structtransp(h.tostruct())
+    bmax=(*cmd).back_max
+    bmin=(*cmd).back_min
+    foreach tag,tag_names(bmax),itag do ncmd=pp_appendcolumn(ncmd,"BACK_MAX_"+tag,bmax.(itag))
+    foreach tag,tag_names(bmin),itag do ncmd=pp_appendcolumn(ncmd,"BACK_MIN_"+tag,bmin.(itag))
+    self.ncmd=ptr_new(ncmd)
+  endif else ncmd=*(self.ncmd)
+  return,ncmd
+end
+
+function pp_titanbrowse_metadb::getcubevars,level
+  ;Retrieves the cube variables tree nodes at the given level
+  compile_opt idl2, hidden
+  ret=[]
+  c=(*self.cmd)
+  if (level eq 0) then begin
+    h=orderedhash(c)
+    ;h.remove,["BACK_MAX","BACK_MIN"]
+    ret=(h.keys()).toarray()
+  endif
+  if (level eq 1) then begin
+    h=orderedhash(c.back_max)
+    ret=(h.keys()).toarray()
+  endif
+  return,ret
+end
+
+function pp_titanbrowse_metadb::getpixelvars,level
+  ;Retrieves the cube variables tree nodes at the given level
+  compile_opt idl2, hidden
+  ret=[]
+  if (level eq "") then begin
+    ret=["Core bands","Backplanes"]
+  endif
+  if (level eq "Backplanes") then begin
+    c=(*self.cmd)
+    h=orderedhash(c.back_max)
+    ret=(h.keys()).toarray()
+  endif
+  if (level eq "Core bands") then begin
+    bands=self.std.bands
+    wavs=*(self.std.wavs)
+    ret=strtrim(sindgen(bands),2)+" ("+string(wavs,format='(F6.4)')+" µm)"
+  endif
+  return,ret
+end
+
 pro pp_titanbrowse_metadb::cleanup
 compile_opt idl2,hidden
 self->pp_cubecollection::cleanup
@@ -178,5 +233,5 @@ pro pp_titanbrowse_metadb__define
 compile_opt idl2
 void={pp_titanbrowse_metadb,inherits pp_cubecollection,modind:0L,cmd:ptr_new(),$
  idstring:strarr(2),std:{pp_titanbrowse_metadb_std,bands:0L,nback:0L,wavs:ptr_new(),$
- bnames:ptr_new(),tnames:ptr_new(),unit:'',bunits:ptr_new(),type:0,fill:ptr_new()}}
+ bnames:ptr_new(),tnames:ptr_new(),unit:'',bunits:ptr_new(),type:0,fill:ptr_new()},ncmd:ptr_new()}
 end

@@ -93,7 +93,7 @@ self.draw.getproperty,geo=geo
 ;xsz=400 & ysz=400
 xsz=geo.xsize & ysz=geo.ysize
 dim=(*self.iso)[self.proj] ? [xsz<ysz,ysz<xsz] : [xsz<(2d0*ysz),ysz<(xsz/2d0)]
-if (self.bmap ne 0) && (~self.pixel_function) then begin
+if (self.bmap ne 0) && ((~self.pixel_function) || self.precision) then begin
   dim=(*self.iso)[self.proj] ? [xsz<ysz,ysz<xsz] : [xsz<(2d0*ysz),ysz<(xsz/2d0)]
   image=(*((*self.maps)[self.bmap]).image)
   sz=size(image,/n_dimensions)
@@ -131,8 +131,13 @@ if (self.cube && ptr_valid(self.data)) then begin
         lons[w]=!values.f_nan
       endif
     endif
-    xy=map_proj_forward(-lons,lats,map_structure=self.mapstructure)
-    for i=0L,np-1L do oplot,xy[0,i*5:(i+1)*5-1],xy[1,i*5:(i+1)*5-1],color=fsc_color('blue')
+    ;xy=map_proj_forward(-lons,lats,map_structure=self.mapstructure,polygons=polygons)
+    ;for i=0L,np-1L do oplot,xy[0,i*5:(i+1)*5-1],xy[1,i*5:(i+1)*5-1],color=fsc_color('blue')
+    for i=0L,np-1L do begin
+      xy=map_proj_forward(-lons[i*5:(i+1)*5-1],lats[i*5:(i+1)*5-1],map_structure=self.mapstructure,polygons=polygons)
+      po=pp_connectivity_list(polygons)
+      foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=fsc_color('blue')
+    endfor
   endif else begin
     sz=size((*self.data).clons)
     nd=sz[0]
@@ -147,17 +152,38 @@ if (self.cube && ptr_valid(self.data)) then begin
         lons[w]=!values.f_nan
       endif
     endif
-    xy=map_proj_forward(-lons,lats,map_structure=self.mapstructure)
-    if (nd eq 1) then oplot,xy[0,*],xy[1,*],color=fsc_color('green') else begin
-      lats=reform(reform(xy[1,*]),sz[1],sz[2])
-      lons=reform(reform(xy[0,*]),sz[1],sz[2])
+    ;xy=map_proj_forward(-lons,lats,map_structure=self.mapstructure)
+    if (nd eq 1) then begin
+      xy=map_proj_forward(-lons,lats,map_structure=self.mapstructure,polyline=polyline)
+      po=pp_connectivity_list(polyline)
+      foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=fsc_color('green')       
+      ;oplot,xy[0,*],xy[1,*],color=fsc_color('green')
+    endif else begin
+      ;lats=reform(reform(xy[1,*]),sz[1],sz[2])
+      ;lons=reform(reform(xy[0,*]),sz[1],sz[2])
+      ;for i=0L,sz[1]-1L do begin
+      ;  w=where(finite(reform(lats[i,*])),nw)
+      ;  if (nw gt 0) then oplot,lons[i,w],lats[i,w],psym=nw gt 0 ? 0 : 6,color=fsc_color('green')
+      ;endfor
+      ;for i=0L,sz[2]-1L do begin
+      ;  w=where(finite(lats[*,i]),nw)
+      ;  if (nw gt 0) then oplot,lons[w,i],lats[w,i],psym=nw gt 0 ? 0 : 6,color=fsc_color('green')
+      ;endfor
       for i=0L,sz[1]-1L do begin
         w=where(finite(reform(lats[i,*])),nw)
-        if (nw gt 0) then oplot,lons[i,w],lats[i,w],psym=nw gt 0 ? 0 : 6,color=fsc_color('green')
+        if (nw gt 0) then begin
+          xy=map_proj_forward(-lons[i,w],lats[i,w],map_structure=self.mapstructure,polyline=polyline)
+          po=pp_connectivity_list(polyline)
+          foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=fsc_color('green')
+        endif
       endfor
       for i=0L,sz[2]-1L do begin
         w=where(finite(lats[*,i]),nw)
-        if (nw gt 0) then oplot,lons[w,i],lats[w,i],psym=nw gt 0 ? 0 : 6,color=fsc_color('green')
+        if (nw gt 0) then begin
+          xy=map_proj_forward(-lons[w,i],lats[w,i],map_structure=self.mapstructure,polyline=polyline)
+          po=pp_connectivity_list(polyline)
+          foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=fsc_color('green')
+        endif
       endfor
     endelse
   endelse
@@ -190,21 +216,33 @@ if (self.pixel_function && ptr_valid(self.data)) then begin
   alt2=eval.pixdata.backplanes.alt_2
   alt3=eval.pixdata.backplanes.alt_3
   alt4=eval.pixdata.backplanes.alt_4
-  w=where(not (alt0 or alt1 or alt2 or alt3 or alt4),count)
+  defsysv,'!ppw1',exists=ppw1
+  if  (~ppw1)||!ppw1 then w=where(not (alt0 or alt1 or alt2 or alt3 or alt4),count) else w=lindgen(n_elements(alt0))
   lons=lons[w]
   lats=lats[w]
   vals=eval[w].val
   range=pp_quartile(vals,[self.minim/100d0,self.maxim/100d0])
-  triangulate,lons,lats,tr,b,/degrees,sphere=sph,fvalue=vals
-  nvals=trigrid(vals,sphere=sph,[0.5,0.5],[-180.,-90.,180.,90.],/degrees,missing=!values.d_nan,xgrid=lonout,ygrid=latout)
-  nvals=range[0]>nvals<range[1]
-  pvals=map_proj_image(nvals,[-180.,-90.,180.,90.],map_structure=self.mapstructure,dimensions=dim)
-  pvals=bytscl(range[0]>pvals<range[1])
-  ;print,range,minmax(nvals)
-  self.image->setproperty,xsize=dim[0],ysize=dim[1],xstart=(xsz-dim[0])/2d0,ystart=(ysz-dim[1])/2d0
-  self.image->setproperty,image=pvals
-  self.draw->draw,/erase
-  self.pvals=ptr_new(nvals)
+  if self.precision then begin
+    nvals=range[0]>vals<range[1]
+    self.pvals=ptr_new(nvals)
+    llats=transpose([[(*self.data)[*].backplanes.lat_1],[(*self.data)[*].backplanes.lat_2],[(*self.data)[*].backplanes.lat_3],[(*self.data)[*].backplanes.lat_4]])
+    llons=transpose([[(*self.data)[*].backplanes.lon_1],[(*self.data)[*].backplanes.lon_2],[(*self.data)[*].backplanes.lon_3],[(*self.data)[*].backplanes.lon_4]])
+    llats=llats[*,w] & llons=llons[*,w]
+    ;self.image->setproperty,image=*self.background
+    ;self.draw->draw,/erase
+    pp_drawsphericalpoly,llons,llats,nvals,rgb_table=0,/direct,map_structure=self.mapstructure
+  endif else begin
+    triangulate,lons,lats,tr,b,/degrees,sphere=sph,fvalue=vals
+    nvals=trigrid(vals,sphere=sph,[0.5,0.5],[-180.,-90.,180.,90.],/degrees,missing=!values.d_nan,xgrid=lonout,ygrid=latout)
+    nvals=range[0]>nvals<range[1]
+    pvals=map_proj_image(nvals,[-180.,-90.,180.,90.],map_structure=self.mapstructure,dimensions=dim)
+    pvals=bytscl(range[0]>pvals<range[1])
+    ;print,range,minmax(nvals)
+    self.image->setproperty,xsize=dim[0],ysize=dim[1],xstart=(xsz-dim[0])/2d0,ystart=(ysz-dim[1])/2d0
+    self.image->setproperty,image=pvals
+    self.draw->draw,/erase
+    self.pvals=ptr_new(nvals)
+  endelse
 
   ;self.background=ptr_new(pvals)
   ;self.image->setproperty,image=bytarr(10,10)
