@@ -688,11 +688,11 @@ href="http://pds-imaging.jpl.nasa.gov/Admin/resources/cd_cassini_vims.html">PDS
     release is<br>
     <br>
     <pre><code>
-\@misc{paulo_penteado_2014_56249,
+\@misc{paulo_penteado_2016_56249,
   author       = {Paulo Penteado},
-  title        = {pp_titanbrowse v1.0.1},
-  month        = oct,
-  year         = 2014,
+  title        = {pp_titanbrowse 1.0.2},
+  month        = jun,
+  year         = 2016,
   doi          = {10.5281/zenodo.56249},
   url          = {http://dx.doi.org/10.5281/zenodo.56249}
 }
