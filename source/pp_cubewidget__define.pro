@@ -17,7 +17,8 @@ row2=obj_new('basewidget',self,column=1,/base_align_left)
 row2col1=obj_new('basewidget',row2,column=1,/base_align_left,title='Band selection',frame=1)
 void=obj_new('labelwidget',row2col1,value='Band selection')
 slide=obj_new('sliderwidget',row2col1,minimum=0,maximum=std.bands-1,title='Band',name=basename+'_band',value=self.band,/drag)
-band_label=obj_new('labelwidget',row2col1,value=string((*std.wavs)[self.band],format='(F6.4)')+' '+string(181B)+'m')
+wbandw=(*std.wavs)[self.band]
+band_label=obj_new('labelwidget',row2col1,value=string(wbandw,format='(F7.4)')+' '+string(181B)+'m '+string(1d4/wbandw,format='(F7.2)')+' cm-1')
 band_mode=obj_new('droplistwidget',row2col1,value=['Image','Contour','None'],index=self.band_mode,name=basename+'_band_mode',title='Display mode:')
 row2col2=obj_new('basewidget',row2,column=1,/base_align_top,title='Backplane selection',frame=1)
 void=obj_new('labelwidget',row2col2,value='Backplane selection')
@@ -63,7 +64,9 @@ self->getproperty,name=basename
 case ename of
   basename+'_band' : begin
     self.band=event.value
-    self.band_label->setproperty,value=string((*(*self.std).wavs)[self.band],format='(F6.4)')+' '+string(181B)+'m'
+    wbandw=(*(*self.std).wavs)[self.band]
+    self.band_label->setproperty,value=string(wbandw,format='(F7.4)')+' '+string(181B)+'m '+$
+      string(1d4/wbandw,format='(F7.2)')+' cm-1'
     if obj_valid(self.cube) then begin
       im=reverse(self.cube->getbandbyindex(self.band),2)
       ptr_free,self.band_im
