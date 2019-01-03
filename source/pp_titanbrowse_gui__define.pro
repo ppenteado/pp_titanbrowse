@@ -43,7 +43,7 @@ rpath=file_dirname(routine_filepath('pp_titanbrowse_gui__define'),/mark_director
 ;maps[1].name='ISS 2007' & maps[1].file=rpath+'issmap_200710.tiff' & maps[1].range=[-180d0,-90d0,180d0,71d0]
 ;maps[2].name='VIMS (Barnes 2009)' & maps[2].file=rpath+'vimsmap_2009.tiff' & maps[2].range=[-181d0,-90d0,181d0,90d0] 
 ;maps[0].name='none'
-maps=['none',rpath+'issmap_201506.tiff',rpath+'vimsmap_2009.tiff',rpath+'issmap_2009.tiff']
+maps=['none',rpath+'earth_bmr.tiff',rpath+'issmap_201506.tiff',rpath+'vimsmap_2009.tiff',rpath+'issmap_2009.tiff']
 tab4=obj_new('pp_mapwidget',tabw,name='map',title='Map',scr_xsize=DEFXSZ,scr_ysize=DEFYSZ,maps=maps,dbobject=self.db)
 tlb->registerformessage,tab4,'cubeselected'
 ;Fifth tab
@@ -412,7 +412,8 @@ endif else begin
 ;Figure out the variable names
 ;Core bands
   vbands=' _c_'+strtrim(sindgen(std.bands),2)+'_ '
-  nbands=strtrim(sindgen(std.bands),2)+' ('+string(*std.wavs,format='(F6.4)')+string(181B)+'m)'
+  nbands=strtrim(sindgen(std.bands),2)+' ('+string(*std.wavs,format='(F7.4)')+$
+    string(181B)+'m '+string(1d4/(*std.wavs),format='(F7.2)')+' cm-1)'
 ;Backplanes
   vbacks=' _b_'+*std.bnames+'_ '
   nbacks=strupcase(*std.bnames) 
