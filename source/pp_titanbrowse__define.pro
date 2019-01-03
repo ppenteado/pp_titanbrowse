@@ -95,7 +95,7 @@ self.podb=ptr_new(podb,/no_copy)
 self.nfiles=nfiles
 self.mdbfiles=ptr_new(mdbfiles,/no_copy)
 self.std=ptr_new(ostd,/no_copy)
-self.backindex=hash(*std.bnames,indgen(n_elements(*std.bnames)))
+self.backindex=hash(*std.bnames,indgen(n_elements(*std.bnames)),/fold_case)
 
 ;Define type for cube information
 cmd=*((*self.podb)[0]->getcmd())
