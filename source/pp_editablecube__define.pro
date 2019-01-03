@@ -31,16 +31,17 @@
 ;      Otherwise, default values are used.
 ;
 ; :Examples:
-;    See the example on pp_editablecube__define.
+;    See the example on pp_nheditablecube__define.
 ;
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
-function pp_editablecube::init,orcube=orcube,file=file,special=special,preservespecial=preservespecial
+function pp_editablecube::init,orcube=orcube,file=file,special=special,preservespecial=preservespecial,$
+  _ref_extra=ex
 compile_opt idl2,hidden
 
 ret=0
 ;If file is provided, read the cube with the methods inherited from readcube
-if (n_elements(file) eq 1) then ret=self->pp_readcube::init(file,special=special) else begin
+if (n_elements(file) eq 1) then ret=self->pp_nhcube::init(file,special=special,_strict_extra=ex) else begin
 ;If a readcube/editablecube object is provided, make a copy of its data
   orcube->getproperty,all=all
   self.file=all.file
@@ -141,7 +142,7 @@ end
 ;      A string array with the name of the core bands unit.
 ;
 ; :Examples:
-;    See the example on pp_editablecube__define.
+;    See the example on pp_nheditablecube__define.
 ;
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
@@ -438,7 +439,7 @@ end
 ;      If set, editing is done to the history part of the header, instead of the label part.
 ;
 ; :Examples:
-;    See the example on pp_editablecube__define.
+;    See the example on pp_nheditablecube__define.
 ;
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
@@ -470,7 +471,7 @@ end
 ;      File format to make. Valid options are 'fits' or 'csv'.
 ;
 ; :Examples:
-;    See the example on pp_editablecube__define.
+;    See the example on pp_nheditablecube__define.
 ; 
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
@@ -480,7 +481,7 @@ compile_opt idl2
 filename=n_elements(filename) eq 1 ? filename : self.newfile
 self.newfile=filename
 if (self.newfile eq '') then message,'Filename required to write the cube'
-print,'Writing cube to file ',filename
+
 openw,unit,self.newfile,/get_lun
 ;Write the labels
 writeu,unit,strjoin((*self.labels)+string(13B)+string(10B))
@@ -509,7 +510,7 @@ end
 ;      The name of the file to which the cube will be written.
 ;
 ; :Examples:
-;    See the example on pp_editablecube__define.
+;    See the example on pp_nheditablecube__define.
 ;
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
@@ -548,7 +549,7 @@ end
 pro pp_editablecube::cleanup
 compile_opt idl2,hidden
 ptr_free,self.oldlabels,self.oldhistory
-self->pp_readcube::cleanup
+self->pp_cube::cleanup
 end
 
 
@@ -578,7 +579,7 @@ end
 ;    
 ;    To initialize from the cube CM_1553510065_1_ir.cub::
 ; 
-;      a=obj_new('pp_editablecube',file='CM_1553510065_1_ir.cub')
+;      a=obj_new('pp_nheditablecube',file='CM_1553510065_1_ir.cub')
 ;      
 ;    To add a dummy backplane::
 ;    
@@ -617,7 +618,7 @@ end
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
 pro pp_editablecube__define
- void={pp_editablecube,inherits pp_readcube,newfile:'',$
+ void={pp_editablecube,inherits pp_cube,newfile:'',$
   oldlabels:ptr_new(),oldhistory:ptr_new(),$
   llength:0L,oldllength:0L,hlength:0L,oldhlength:0L,$
   binlength:0LL,oldbinlength:0LL,preservespecial:0}

@@ -35,15 +35,14 @@
 ;
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Nov/2009
 ;-
-function pp_cubecollection::init,savefile,build=build,cubefiles=cubefiles,vis=vis,ir=ir,compress=compress,$
-  class=class,_ref_extra=ex
-compile_opt idl2
+function pp_cubecollection::init,savefile,build=build,cubefiles=cubefiles,vis=vis,$
+  ir=ir,compress=compress,class=class
 
+compile_opt idl2
+class=n_elements(class) ? class : 'pp_editablecube'
+self.class=class
 ret=0
 ;Defaults
-
-class=n_elements(class) ? class : 'pp_editablecube'
-
 compress=n_elements(compress) eq 1 ? compress : 1B
 build=n_elements(build) eq 1 ? build : 0
 if (n_elements(savefile) eq 0) then begin
@@ -53,7 +52,7 @@ endif else self.savefile=savefile
 
 idstring='pp_cubecollection_container' ;id to test if savefile was created by this object
 
-error_status=0;catch,error_status
+catch,error_status
 if (error_status ne 0) then begin
   catch,/cancel
   print,'pp_cubecollection::init : Could not read file "',self.savefile,'"'
@@ -70,13 +69,14 @@ endif else begin
     ocubes=objarr(ncubes)
     for i=0,ncubes-1 do begin
       print,'Reading ',cubefiles[i],' (',strcompress(string(i+1,'/',ncubes,')'),/rem)
-      ocubes[i]=obj_new(class,file=cubefiles[i],_strict_extra=ex)
+      ocubes[i]=obj_new(class,file=cubefiles[i])
     endfor
 ;Build index of heap variables, needed to retrieve individual elements of ocube from savefile
     heapinds=long(strsplit(strjoin(string(ocubes,/print)),'<ObjHeapVar',/regex,/extract))
 ;Make savefile
     print,'Writing savefile'
-    save,file=savefile,idstring,ncubes,cubefiles,heapinds,ocubes,compress=compress
+    cubefiles=file_basename(cubefiles)
+    save,file=savefile,idstring,ncubes,cubefiles,heapinds,ocubes,compress=compress,class
 ;Get rid of the large ocubes array
     obj_destroy,ocubes
   endif
@@ -87,9 +87,10 @@ endif else begin
     oidstring=idstring
     self.osav->restore,'idstring'
     if (idstring[0] ne oidstring) then message,'Not a pp_cubecollection savefile'
-    self.osav->restore,['ncubes','cubefiles','heapinds']
+    self.osav->restore,['ncubes','cubefiles','heapinds','class']
 ;Make a dummy editablecube object just to make sure its methods get compiled
-    a=obj_new('pp_editablecube',file='')
+    self.class=class
+    a=obj_new(class,file='')
     obj_destroy,a
   endif
 ;Save fields into self
@@ -256,5 +257,5 @@ end
 ;-
 pro pp_cubecollection__define
 compile_opt idl2
-void={pp_cubecollection,savefile:'',ncubes:0L,cubefiles:ptr_new(),heapinds:ptr_new(),osav:obj_new()}
+void={pp_cubecollection,savefile:'',ncubes:0L,cubefiles:ptr_new(),heapinds:ptr_new(),osav:obj_new(),class:''}
 end
