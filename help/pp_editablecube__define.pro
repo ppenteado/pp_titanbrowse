@@ -480,7 +480,7 @@ compile_opt idl2
 filename=n_elements(filename) eq 1 ? filename : self.newfile
 self.newfile=filename
 if (self.newfile eq '') then message,'Filename required to write the cube'
-
+print,'Writing cube to file ',filename
 openw,unit,self.newfile,/get_lun
 ;Write the labels
 writeu,unit,strjoin((*self.labels)+string(13B)+string(10B))

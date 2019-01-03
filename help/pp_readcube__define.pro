@@ -43,7 +43,7 @@ if (n_elements(file) ne 1) then begin
 endif else if (file eq '') then return,ret ;Silently get out to allow the trick in pp_cubecollection::init
 header=obj_new('pp_buffered_vector')
 history=obj_new('pp_buffered_vector')
-catch,error_status
+error_status=0;catch,error_status
 if (error_status ne 0) then begin
   catch,/cancel
   print,'pp_readcube: Cube named "',file,'" could not be read or parsed'
@@ -367,7 +367,7 @@ datatype=size(data,/type)
      if (count gt 0) then data[w]=rep
      sel=(data eq special.null)
      sel=sel or (data eq special.low_repr_sat)
-     sel=sel or (data eq special.low_inst_sat)
+     sel=sel or (data eq special.low_instr_sat)
      sel=sel or (data eq special.high_instr_sat)
      sel=sel or (data eq special.high_repr_sat)
      w=where(sel,count)
@@ -377,6 +377,40 @@ datatype=size(data,/type)
 return,data
 end
 
+function pp_readcube::getexerpt
+compile_opt idl2,logical_predicate
+nx=self.info.coredims[0]
+nz=self.info.coredims[1]
+npixels=nx*nz
+ret=replicate({x:0,z:0,lats:dblarr(4)+!values.d_nan,lons:dblarr(4)+!values.d_nan,lat:!values.d_nan,$
+  lon:!values.d_nan,emissions:dblarr(4)+!values.d_nan,phases:dblarr(4)+!values.d_nan,incidences:$
+  dblarr(4)+!values.d_nan,az_difs:dblarr(4)+!values.d_nan,emission:!values.d_nan,phase:!values.d_nan,$
+  incidence:!values.d_nan,az_dif:!values.d_nan},npixels)
+lats=reform(self.getsuffixbyname('LAT_'+strtrim(indgen(5),2)),npixels,5)
+lons=reform(self.getsuffixbyname('LON_'+strtrim(indgen(5),2)),npixels,5)
+emissions=reform(self.getsuffixbyname('EMISSION_'+strtrim(indgen(5),2)),npixels,5)
+phases=reform(self.getsuffixbyname('PHASE_'+strtrim(indgen(5),2)),npixels,5)
+incidences=reform(self.getsuffixbyname('INCIDENCE_'+strtrim(indgen(5),2)),npixels,5)
+az_difs=reform(self.getsuffixbyname('AZ_DIF_'+strtrim(indgen(5),2)),npixels,5)
+x=(indgen(nx)+1)#replicate(1,nz)
+z=replicate(1,nx)#(indgen(nz)+1)
+x=reform(x,npixels)
+z=reform(z,npixels)
+ret.x=x & ret.z=z
+ret.lat=lats[*,0]
+ret.lon=lons[*,0]
+ret.incidence=incidences[*,0]
+ret.phase=phases[*,0]
+ret.emission=emissions[*,0]
+ret.az_dif=az_difs[*,0]
+ret.lats=transpose(lats[*,1:4])
+ret.lons=transpose(lons[*,1:4])
+ret.incidences=transpose(incidences[*,1:4])
+ret.phases=transpose(phases[*,1:4])
+ret.emissions=transpose(emissions[*,1:4])
+ret.az_difs=transpose(az_difs[*,1:4])
+return,ret
+end
 
 ;+
 ; :Description:
@@ -450,7 +484,8 @@ pro pp_readcube::getproperty,all=all,file=file,special=special,labels=labels,his
  core=core,backplanes=backplanes,sideplanes=sideplanes,bottomplanes=bottomplanes,$
  info=info,lines=lines,bands=bands,samples=samples,nback=nback,nside=nside,nbottom=nbottom,$
  rawdata=raw,wavelengths=wavs,backnames=bnames,sidenames=snames,bottomnames=bonames,$
- units=wunits,backunits=bunits,sideunits=sunits,bottomunits=bounits,struct_backplanes=struct_backplanes
+ units=wunits,backunits=bunits,sideunits=sunits,bottomunits=bounits,struct_backplanes=struct_backplanes,$
+ npixels=npixels,lats=lats,lons=lons
 compile_opt idl2
 
 all=arg_present(all)
@@ -465,6 +500,7 @@ if (all || arg_present(bottomplanes)) then bottomplanes=ptr_valid(self.bottompla
 if (all || arg_present(info)) then info=self.info
 if (all || arg_present(lines)) then lines=self.info.coredims[1]
 if (all || arg_present(samples)) then samples=self.info.coredims[0]
+if (all || arg_present(npixels)) then npixels=self.info.coredims[0]*self.info.coredims[1]
 if (all || arg_present(bands)) then bands=self.info.coredims[2]
 if (all || arg_present(nback)) then nback=self.info.suffdims[2]
 if (all || arg_present(nside)) then nside=self.info.suffdims[0]
@@ -486,6 +522,20 @@ if (all || arg_present(struct_backplanes)) then begin
   struct_backplanes=replicate(tmp,self.info.coredims[0],self.info.coredims[1],self.info.suffdims[2])
   for i=0,nt-1 do struct_backplanes[*,*].(i)=(*self.backplanes)[*,*,i]
   endif else struct_backplanes=ptr_new()
+endif
+
+if arg_present(lats) then begin
+  lats=self[['lat_1','lat_2','lat_3','lat_4']]
+  self.getproperty,npixels=np
+  lats=reform(lats,np,4)
+  lats=transpose(lats)
+endif
+
+if arg_present(lons) then begin
+  lons=self[['lon_1','lon_2','lon_3','lon_4']]
+  self.getproperty,npixels=np
+  lons=reform(lons,np,4)
+  lons=transpose(lons)
 endif
 
 if all then all={file:file,special:special,labels:labels,history:history,core:core,$
@@ -619,10 +669,16 @@ if ptr_valid(sufnames) then begin
   csufnames=cases ? *sufnames : strupcase(*sufnames)
   cnames=cases ? names : strupcase(names)
   for i=0,nnames-1 do begin
-    w=where((strpos(csufnames,cnames[i]) ne -1),nw)
-    found[i]=nw
-    index[i]=w[0]
-    if (nw gt 0) then ret[0,0,i]=(*sufvals)[*,*,w[0]] 
+    if (cnames[i]  eq 'X') or (cnames[i]  eq 'Z') then begin
+      if (cnames[i]  eq 'X') then tmp=indgen(self.info.coredims[[0,1]]) mod self.info.coredims[0] 
+      if (cnames[i]  eq 'Z') then tmp=reverse(floor(indgen(self.info.coredims[[0,1]]) / self.info.coredims[0]),2)
+      ret[0,0,i]=tmp+1
+    endif else begin
+      w=where((strpos(csufnames,cnames[i]) ne -1),nw)
+      found[i]=nw
+      index[i]=w[0]
+      if (nw gt 0) then ret[0,0,i]=(*sufvals)[*,*,w[0]]
+    endelse 
   endfor
 endif
 return,ret
@@ -757,13 +813,13 @@ end
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
 function pp_readcube::getfromheader,key,history=hist,$
- count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel
+ count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel,cont=cont
 compile_opt idl2
 
 ;Defaults
 hist=n_elements(hist) eq 1 ? hist : 0
 tmp=hist ? *self.thistory : *self.tlabels
-ret=pp_getcubeheadervalue(tmp,key,count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel)
+ret=pp_getcubeheadervalue(tmp,key,count=count,fold_case=fold_case,lines=lines,unquote=unquote,sel=sel,cont=cont)
 return,ret
 end
 
