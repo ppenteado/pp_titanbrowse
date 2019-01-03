@@ -90,7 +90,9 @@ for i=0L,self.ncubes-1 do begin
     cinfo[i].seq_title=cinfo[i].ocube->getfromheader('SEQUENCE_TITLE',/unquote,count=tmp) & count*=tmp
     if (tmp eq 0) then continue ;If some of the required parameters is missing, skip this cube
 ;Get cube-constant metadata
-    cinfo[i].rev=(strsplit(cinfo[i].seq_title,'_',/extract))[1]
+    rev=(strsplit(cinfo[i].seq_title,'._',/extract))
+    rev=n_elements(rev) ge 2 ? rev[1] : cinfo[i].seq_title
+    cinfo[i].rev=rev
     cinfo[i].prod_id=cinfo[i].ocube->getfromheader('PRODUCT_ID',/unquote)
     cinfo[i].start=cinfo[i].ocube->getfromheader('START_TIME',/unquote)
     cinfo[i].stop=cinfo[i].ocube->getfromheader('STOP_TIME',/unquote)
@@ -108,7 +110,7 @@ for i=0L,self.ncubes-1 do begin
     cinfo[i].exposure=expdur
     tmp=cinfo[i].ocube->getfromheader('SAMPLING_MODE_ID',/unquote)
     cinfo[i].ir_mode=tmp[0]
-    cinfo[i].vis_mode=tmp[1]
+    cinfo[i].vis_mode=tmp[1<(n_elements(tmp)-1)]
     cinfo[i].ocube->getproperty,file=file
     cinfo[i].file=file
 ;Get ranges for pixel-variable metadata
@@ -150,8 +152,9 @@ endif else begin
   obj_destroy,self.osav
   savefile=self.savefile & idstring=self.idstring & cubefiles=*self.cubefiles
   heapinds=*self.heapinds & modind=self.modind & std=self.std
+  class=self.class
   save,file=savefile,idstring,ncubes,cubefiles,heapinds,ocubes,$
-   modind,cmd,std,compress=compress
+   modind,cmd,std,compress=compress,class
   obj_destroy,ocubes
   ;self.osav=obj_new('idl_savefile',self.savefile)
   self.cmd=ptr_new(cmd,/no_copy)
@@ -216,7 +219,7 @@ function pp_titanbrowse_metadb::getpixelvars,level
   if (level eq "Core bands") then begin
     bands=self.std.bands
     wavs=*(self.std.wavs)
-    ret=strtrim(sindgen(bands),2)+" ("+string(wavs,format='(F6.4)')+" µm)"
+    ret=strtrim(sindgen(bands),2)+" ("+string(wavs,format='(F8.4)')+" µm)"
   endif
   return,ret
 end
