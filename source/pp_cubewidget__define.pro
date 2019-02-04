@@ -29,6 +29,8 @@ row2col3=obj_new('basewidget',row2,column=1,/base_align_left)
 button_base=obj_new('basewidget',row2col3,/nonexclusive)
 grid=obj_new('buttonwidget',button_base,value='Draw grid',name=basename+'_drawbutton')
 grid->setproperty,set_button=self.grid
+flip=obj_new('buttonwidget',button_base,value='Flip',name=basename+'_flipbutton')
+flip->setproperty,set_button=self.flip
 plot=obj_new('buttonwidget',button_base,value='Plot spectrum',name=basename+'_plotbutton')
 plot->setproperty,set_button=self.plot
 file_label=obj_new('labelwidget',row2col3,value='No cube selected',/dynamic_resize)
@@ -68,9 +70,10 @@ case ename of
     self.band_label->setproperty,value=string(wbandw,format='(F7.4)')+' '+string(181B)+'m '+$
       string(1d4/wbandw,format='(F7.2)')+' cm-1'
     if obj_valid(self.cube) then begin
-      im=reverse(self.cube->getbandbyindex(self.band),2)
+      im=self.flip ? self.cube->getbandbyindex(self.band) : reverse(self.cube->getbandbyindex(self.band),2)
       ptr_free,self.band_im
       self.band_im=ptr_new(im)
+      self.sz=size(im,/dimensions)
       if (self.band_mode eq 0) then begin
         immin=min(im,max=immax,/nan)
         self.image->setproperty,image=im,sclmin=immin,sclmax=immax,bottom=immin
@@ -83,9 +86,10 @@ case ename of
     event.id->getproperty,value=val
     self.backplane=val
     if obj_valid(self.cube) then begin
-      im=reverse(self.cube->getsuffixbyname(self.backplane),2)
+      im=self.flip ? self.cube->getsuffixbyname(self.backplane) : reverse(self.cube->getsuffixbyname(self.backplane),2)
       ptr_free,self.backplane_im
       self.backplane_im=ptr_new(im)
+      self.sz=size(im,/dimensions)
       if (self.backplane_mode eq 0B) then begin
         immin=min(im,max=immax,/nan)
         self.image->setproperty,image=im,sclmin=immin,sclmax=immax,bottom=immin
@@ -96,10 +100,15 @@ case ename of
     self.grid=~self.grid
     event.id->setproperty,set_button=self.grid
   end
+  basename+'_flipbutton' : begin
+    self.flip=~self.flip
+    event.id->setproperty,set_button=self.flip
+  end
   basename+'_draw' : if (obj_valid(self.cube)) then begin
     value=self.image->pixel_to_value(event.x, event.y,inside=inside,xpixel=xpix,ypixel=ypix,xdata=xdata,ydata=ydata)
-    self.coord->getproperty,yrange=yr
-    x=xpix+1 & y=yr[0]-ypix+1
+    self.coord->getproperty,yrange=yr,xrange=xr
+    x=xpix+1 
+    y=self.flip ? ypix+1 : yr[0]-ypix+1
     val='X: '+string(x,format='(I4)')+' Z: '+string(y,format='(I4)')$
      +' Value: '+string(value,format='(E12.4)')
     self.location_label->setproperty,value=val
@@ -109,8 +118,12 @@ case ename of
      +string(10B)+' Alt: '+string((*self.alt)[x-1,-y],format='(E11.4)')
     self.geo_label->setproperty,value=val
     if (self.plot && ((event.clicks ne 0) || (event.press ne 0))) then begin
+      if ~ptr_valid(self.mask) then begin
+        mask=bytarr(3,xr,yr)
+      endif else mask=*self.mask
+      
       self.cube->getproperty,core=core,struct_backplanes=backplanes
-      newdata={cube:self.cube,pixel:{core:reform(core[x-1,y-1,*]),backplanes:backplanes[x-1,y-1]}}
+      newdata={cube:self.cube,pixel:{core:reform(core[x-1,yim,*]),backplanes:backplanes[x-1,yim]}}
       if (event.press eq 4) then begin
         self.spectrum->getproperty,spectrum_data=olddata,nspec=nspec
         newdata=[olddata,newdata]
@@ -154,8 +167,8 @@ if (obj_valid(self.cube)) then begin
       lat=self.cube->getsuffixbyname('LATITUDE')
       lon=self.cube->getsuffixbyname('LONGITUDE')
     endif
-    lat=reverse(lat,2)
-    lon=reverse(lon,2)
+    lat=self.flip ? reverse(lat,2) : lat
+    lon=self.flip ? reverse(lon,2) : lon
     contour,lat,/noerase,color=fsc_color('red'),xstyle=1,ystyle=1,nlevels=21,xmargin=[0,0],ymargin=[0,0]
     contour,lon,/noerase,color=fsc_color('red'),xstyle=1,ystyle=1,nlevels=21,xmargin=[0,0],ymargin=[0,0]
   endif
@@ -163,14 +176,16 @@ if (obj_valid(self.cube)) then begin
     szcont=size(*self.band_im,/dimensions)
     xcont=dindgen(szcont[0])-0.5d0
     ycont=dindgen(szcont[1])-0.5d0
-    contour,*self.band_im,xcont,ycont,color=fsc_color('blue'),nlevels=21,xstyle=1,ystyle=1,/noerase,$
+    sbim=self.flip ? reverse(*self.band_im,2) : *self.band_im
+    contour,sbim,xcont,ycont,color=fsc_color('blue'),nlevels=21,xstyle=1,ystyle=1,/noerase,$
       xmargin=[0,0],ymargin=[0,0],xrange=[0,szcont[0]-1],yrange=[0,szcont[1]-1]
   endif
   if (self.backplane_mode eq 1B) && ptr_valid(self.backplane_im) then begin
    szcont=size(*self.backplane_im,/dimensions)
    xcont=dindgen(szcont[0])-0.5d0
    ycont=dindgen(szcont[1])-0.5d0
-   contour,*self.backplane_im,xcont,ycont,color=fsc_color('green'),nlevels=21,xstyle=1,ystyle=1,/noerase,$
+   sbim=self.flip ? reverse(*self.backplane_im,2) : *self.backplane_im
+   contour,sbim,xcont,ycont,color=fsc_color('green'),nlevels=21,xstyle=1,ystyle=1,/noerase,$
      xmargin=[0,0],ymargin=[0,0],xrange=[0,szcont[0]-1],yrange=[0,szcont[1]-1]
   endif
 endif
@@ -202,5 +217,6 @@ compile_opt idl2
 void={pp_cubewidget,inherits basewidget,band:0L,backplane:'',std:ptr_new(),band_mode:0B,$
  backplane_mode:0B,grid:0B,band_label:obj_new(),image:obj_new(),cube:obj_new(),file_label:obj_new(),$
  band_im:ptr_new(),backplane_im:ptr_new(),coord:obj_new(),location_label:obj_new(),plot:0B,spectrum:obj_new(),draw:obj_new(),$
- lat:ptr_new(),lon:ptr_new(),alt:ptr_new(),geo_label:obj_new()}
+ lat:ptr_new(),lon:ptr_new(),alt:ptr_new(),geo_label:obj_new(),flip:0B,mask:ptr_new(),sz:lonarr(2),$
+ masked:0L}
 end
