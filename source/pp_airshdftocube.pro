@@ -16,12 +16,13 @@ function pp_airshdftocube,f,tmfile=tmfile,noreload=noreload,nounload=nounload,lo
 compile_opt idl2,logical_predicate
 
 tmfile=n_elements(tmfile) ? tmfile : cgsourcedir()+'/data/pp_aqua.tm'
+if ~file_test(tmfile) then tmfile=(file_which('pp_aqua.tm'))[0]
 
 if ~keyword_set(noreload) then cspice_furnsh,tmfile
 if keyword_set(loadonly) then return,!null
 
 ;f='lsb_0034933739_0x53c_sci_1.fit'
-if stregex(f,'AIRS.[[:digit:]]{4}\.[[:digit:]]{2}\.[[:digit:]]{2}\.[[:digit:]]{3}\.L1B\.AIRS_Rad\..*\.hdf',/boolean) then begin
+if stregex(f,'AIRS.[[:digit:]]{4}\.[[:digit:]]{2}\.[[:digit:]]{2}\.[[:digit:]]{3}\.L1[B|C]\.AIRS_Rad\..*\.hdf',/boolean) then begin
   f1=f
   root=stregex(f,'AIRS.[[:digit:]]{4}\.[[:digit:]]{2}\.[[:digit:]]{2}\.[[:digit:]]{3}',/extract)
   f2=(file_search(file_dirname(f)+path_sep()+root+'.L2.RetStd_IR.*hdf'))[-1]
@@ -29,16 +30,23 @@ endif else begin
   f2=f
   root=stregex(f,'AIRS.[[:digit:]]{4}\.[[:digit:]]{2}\.[[:digit:]]{2}\.[[:digit:]]{3}',/extract)
   f1=(file_search(file_dirname(f)+path_sep()+root+'.L1B.AIRS_Rad.*hdf'))[-1]
+  l1t='L1B_AIRS_Science'
+  if ~f1 then begin
+    f1=(file_search(file_dirname(f)+path_sep()+root+'.L1C.AIRS_Rad.*hdf'))[-1]
+    l1t='L1C_AIRS_Science'
+  endif
 endelse
 
+print,'reading ',f1
 h1=hdf_parse(f1,/read_data)
+print,'reading ',f2
 h2=hdf_parse(f2,/read_data)
 
 
-l1rad=h1['L1B_AIRS_Science','Data Fields','radiances','_DATA']
-l1rad_fill=(h1['L1B_AIRS_Science','Data Fields','radiances','_FillValue','_DATA'])[0]
+l1rad=h1[l1t,'Data Fields','radiances','_DATA']
+l1rad_fill=(h1[l1t,'Data Fields','radiances','_FillValue','_DATA'])[0]
 l1rad[where(l1rad eq l1rad_fill,/null)]=!values.d_nan
-l1fre=h1['L1B_AIRS_Science','Data Fields','nominal_freq','nominal_freq','_DATA']
+l1fre=h1[l1t,'Data Fields','nominal_freq','nominal_freq','_DATA']
 
 
 
