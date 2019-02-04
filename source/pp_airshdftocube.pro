@@ -182,11 +182,11 @@ backplanes=dblarr(nsamples,nlines,nback)+!values.d_nan
 bunits=[bunits,'dust_flag','dust_score','sci','K']
 bunits=[bunits,'K','K','hPa','mmr','mmr','percent','K','mmr','ch4']
 
-lat=h1['L1B_AIRS_Science','Geolocation Fields','Latitude','_DATA']
-latfv=(h1['L1B_AIRS_Science','Geolocation Fields','Latitude','_FillValue','_DATA'])[0]
+lat=h1[l1t,'Geolocation Fields','Latitude','_DATA']
+latfv=(h1[l1t,'Geolocation Fields','Latitude','_FillValue','_DATA'])[0]
 lat[where(lat eq latfv,/null)]=!values.d_nan
-lon=h1['L1B_AIRS_Science','Geolocation Fields','Longitude','_DATA']
-lonfv=(h1['L1B_AIRS_Science','Geolocation Fields','Longitude','_FillValue','_DATA'])[0]
+lon=h1[l1t,'Geolocation Fields','Longitude','_DATA']
+lonfv=(h1[l1t,'Geolocation Fields','Longitude','_FillValue','_DATA'])[0]
 lon[where(lon eq lonfv,/null)]=!values.d_nan
 
 backplanes[*,*,0]=lat
@@ -200,23 +200,23 @@ backplanes[*,*,2]=lat
 backplanes[*,*,7]=lon
 backplanes[*,*,12]=0d0 ;ALT
 
-tmpb=h1['L1B_AIRS_Science','Data Fields','dust_flag','_DATA']
-tmpf=(h1['L1B_AIRS_Science','Data Fields','dust_flag','_FillValue','_DATA'])[0]
+tmpb=h1[l1t,'Data Fields','dust_flag','_DATA']
+tmpf=(h1[l1t,'Data Fields','dust_flag','_FillValue','_DATA'])[0]
 tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,17]=tmpb
 
-tmpb=h1['L1B_AIRS_Science','Data Fields','dust_score','_DATA']
-tmpf=(h1['L1B_AIRS_Science','Data Fields','dust_score','_FillValue','_DATA'])[0]
+tmpb=h1[l1t,'Data Fields','dust_score','_DATA']
+tmpf=(h1[l1t,'Data Fields','dust_score','_FillValue','_DATA'])[0]
 tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,18]=tmpb
 
-tmpb=h1['L1B_AIRS_Science','Data Fields','spectral_clear_indicator','_DATA']
-tmpf=(h1['L1B_AIRS_Science','Data Fields','spectral_clear_indicator','_FillValue','_DATA'])[0]
+tmpb=h1[l1t,'Data Fields','spectral_clear_indicator','_DATA']
+tmpf=(h1[l1t,'Data Fields','spectral_clear_indicator','_FillValue','_DATA'])[0]
 tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,19]=tmpb
 
-tmpb=h1['L1B_AIRS_Science','Data Fields','BT_diff_SO2','_DATA']
-tmpf=(h1['L1B_AIRS_Science','Data Fields','BT_diff_SO2','_FillValue','_DATA'])[0]
+tmpb=h1[l1t,'Data Fields','BT_diff_SO2','_DATA']
+tmpf=(h1[l1t,'Data Fields','BT_diff_SO2','_FillValue','_DATA'])[0]
 tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,20]=tmpb
 
@@ -271,7 +271,7 @@ wavs=1d4/l1fre
 eh1=pp_eosparse(f1)
 eh2=pp_eosparse(f2)
 h0=eh1+eh2
-h0['nadirTAI']=h1['L1B_AIRS_Science','Data Fields','nadirTAI','nadirTAI','_DATA']
+h0['nadirTAI']=h1[l1t,'Data Fields','nadirTAI','nadirTAI','_DATA']
 h0['tmfile']=tmfile
 ret={core:core,wavs:wavs,backplanes:backplanes,backnames:backnames,header:h0,bunits:bunits}
 
