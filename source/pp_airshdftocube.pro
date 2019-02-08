@@ -105,11 +105,6 @@ bo=a.earthfovs(circ=0,exd=exd,/airs,/border)
 if airsres then e3r=a.earthfovs(circ=circ,exd=exd,/airs,rectangles=1.5d0) else e3r=a.earthfovs(circ=circ,exd=exd,/amsu,rectangles=1.5d0) 
 ;e3a=a.earthfovs(circ=circ,exd=exd,/amsu)
 
-;d=mrdfits(f,0,h0,/dscale)
-;w=mrdfits(f,1,/dscale)
-;e=mrdfits(f,7,/dscale)
-;a=mrdfits(f,2,/dscale)
-;sz=size(d,/dimensions)
 sz=size(l1rad,/dimensions)
 
 nwav=sz[0]
@@ -120,95 +115,6 @@ nsamples=sz[1]
 
 
 
-;x=dblarr(nlines,nsamples)
-;y=dblarr(nlines,nsamples)
-;z=dblarr(nlines,nsamples)
-;mina=min(a[*,*,0],minloc)
-;minl=array_indices(a[*,*,0],minloc)
-;found=bytarr(nlines,nsamples)
-;point=dblarr(3,nlines,nsamples)
-;pointg=dblarr(3,nlines,nsamples)
-;pf=poly_fit(dindgen(nsamples),e[0,*],1,/double,yfit=ets)
-;ets2=[pf[0]-1d0*pf[1],ets,pf[0]+nsamples*pf[1]]
-;qs=[[[0d0,0d0,0d0,0d0]],[e[1:4,*]],[[0d0,0d0,0d0,0d0]]]
-;qs[*,0]=qs[*,1]-(qs[*,1]-qs[*,0])
-;qs[*,-1]=qs[*,-1]+(qs[*,-1]-qs[*,-2])
-;geop=list()
-;ts=0.5d0*[0,-1,-1,1,1]
-;for ip=0,4 do begin
-;  for isample=0,nsamples-1 do begin
-;    et=ets[isample]
-;    et=interpolate(ets2,isample+ts[ip])
-;    cspice_sxform, 'NH_SPACECRAFT', 'IAU_JUPITER', et, xform
-;    cspice_sxform, 'J2000', 'IAU_JUPITER', et, xform2000
-;    q=e[1:4,isample]
-;    q=interpolate(qs,dindgen(4),isample+ts[ip],/grid,/double)
-;    cspice_q2m, q, m
-;    
-;  ;  if isample eq 0 then oldxform=xform else begin
-;  ;    print,isample,array_equal(oldxform,xform)
-;  ;    oldxform=xform
-;  ;  endelse
-;    cspice_spkgps, target, et, frame, observer, pos, ltime
-;    if ip eq 0 then begin
-;      z[*,isample]=a[*,minl[1],2]
-;      x[*,isample]=a[*,minl[1],0]
-;      if isample eq (nsamples-1) then begin
-;        x0=pp_nhfitstocube_expandarray(x)
-;        z0=pp_nhfitstocube_expandarray(z)      
-;      endif
-;    endif else if (isample eq 0) then begin
-;      indsi=1+dindgen(nlines)
-;      indsj=1+dindgen(nsamples)
-;      case ip of
-;        1: begin
-;            indsi-=0.5d0 & indsj-=0.5d0;top left
-;          end
-;        3: begin
-;          indsi+=0.5d0 & indsj+=0.5d0;bottom right
-;        end
-;        2: begin
-;          indsi+=0.5d0 & indsj-=0.5d0;top right
-;        end
-;        4: begin
-;          indsi-=0.5d0 & indsj+=0.5d0;bottom left
-;        end      
-;      endcase
-;      x=interpolate(x0,indsi,indsj,/grid,/double)
-;      z=interpolate(z0,indsi,indsj,/grid,/double)
-;    endif
-;    for iline=0,nlines-1 do begin
-;      u=[x[iline,isample],  y[iline,isample], z[iline,isample]]
-;      
-;      ;jstate = transpose(xform) # [u,0d0,0d0,0d0]
-;      
-;      uj = transpose(m) # u
-;      jstate = transpose(xform2000) # [uj,0d0,0d0,0d0]
-;      
-;      
-;      if ip eq 0 then begin
-;        cspice_surfpt, pos, jstate[0:2], radii[0], radii[1], radii[2], pointp, foundp
-;        found[iline,isample]=foundp  
-;        cspice_recpgr, body, pointp, re, flat, lon, lat, alt
-;        lon=lon*180d0/!dpi
-;        cww=where(lon gt 180d0,ncww)
-;        if ncww then lon[cww]-=360d0
-;        point[*,iline,isample]=foundp ? [lon,lat*180d0/!dpi,alt] : !values.d_nan
-;      endif
-;      
-;      cspice_npedln, radii[0], radii[1], radii[2], pos, jstate[0:2], pnear, dist
-;      cspice_recpgr, body, pnear, re, flat, lon, lat, alt
-;      lon=lon*180d0/!dpi
-;      cww=where(lon gt 180d0,ncww)
-;      if ncww then lon[cww]-=360d0
-;      pointg[*,iline,isample]=[lon,lat*180d0/!dpi,dist]
-;    endfor
-;  endfor
-;  geop.add,pointg
-;endfor
-
-;core=dblarr(nlines,nsamples,nwav+1)
-;core[0]=transpose(d,[0,2,1])
 
 
 core=transpose(l1rad,[1,2,0])
@@ -223,16 +129,12 @@ foreach var,vars do begin
 endforeach
 l1names=["dust_flag","dust_score","spectral_clear_indicator","BT_diff_SO2",$
   'sat_lat','sat_lon','satzen','satazi','solzen','solazi','glintlat','glintlon','sun_glint_distance','topog','landFrac']
-;backnames=[backnames,"dust_flag","dust_score","spectral_clear_indicator","BT_diff_SO2"]
-;backnames=[backnames,'sat_lat','sat_lon','satzen','satazi','solzen','solazi','glintlat','glintlon','sun_glint_distance','topog','landFrac'] 
 backnames=[backnames,l1names]
 bunits=[bunits,'dust_flag','dust_score','sci','K']
 bunits=[bunits,replicate('degree',8),'km','m','fraction']
 
 l2names=['TSurfAir','TSurfStd','PSurfStd','H2OMMRSatSurf','H2OMMRSurf','RelHumSurf',$
   'CH4_total_column']
-;backnames=[backnames,'TSurfAir','TSurfStd','PSurfStd','H2OMMRSatSurf','H2OMMRSurf','RelHumSurf',$
-;  'CH4_total_column'];,'TAirStd_500','COVMRLevStd_500']
 backnames=[backnames,l2names]
 bunits=[bunits,'K','K','hPa','mmr','mmr','percent','ch4']
 
@@ -241,7 +143,6 @@ levs=h2['StdPressureLev:L2_Standard_atmospheric&surface_product','_DATA']
 slevs=strtrim(string(levs,format='(F0.1)'),2)
 l2namesl='TAirStd_'+slevs
 backnames=[backnames,l2namesl]
-;backnames=[backnames,'TAirStd_'+slevs]
 bunits=[bunits,replicate('K',n_elements(levs))]
 
 nback=n_elements(backnames)
@@ -280,13 +181,6 @@ foreach l1n,l1names,il1 do begin
   ln=17+il1
   backplanes[*,*,ln]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],l1n,airsres=airsres)
 endforeach
-;backplanes[*,*,17]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'dust_flag',airsres=airsres);tmpb
-;
-;backplanes[*,*,18]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'dust_score',airsres=airsres);tmpb
-;
-;backplanes[*,*,19]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'spectral_clear_indicator',airsres=airsres);tmpb
-;
-;backplanes[*,*,20]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'BT_diff_SO2',airsres=airsres);tmpb
 
 szb=size(backplanes,/dimensions)
 
@@ -295,20 +189,6 @@ foreach l2n,l2names,il2 do begin
   backplanes[*,*,ln2]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],l2n,airsres=airsres)
 endforeach
 
-;backplanes[*,*,21]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TSurfAir',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-;
-;backplanes[*,*,22]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TSurfStd',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-;
-;backplanes[*,*,23]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'PSurfStd',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-;
-;backplanes[*,*,24]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'H2OMMRSatSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-;
-;backplanes[*,*,25]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'H2OMMRSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-;
-;backplanes[*,*,26]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'RelHumSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-;
-;
-;backplanes[*,*,27]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'CH4_total_column',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
 foreach lev,levs,il do begin
   backplanes[*,*,ln2+1+il]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TAirStd',airsres=airsres))[il,*,*])
