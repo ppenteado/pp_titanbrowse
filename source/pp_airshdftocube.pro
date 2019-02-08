@@ -134,16 +134,79 @@ bunits=[bunits,'dust_flag','dust_score','sci','K']
 bunits=[bunits,replicate('degree',8),'km','m','fraction']
 
 l2names=['TSurfAir','TSurfStd','PSurfStd','H2OMMRSatSurf','H2OMMRSurf','RelHumSurf',$
-  'CH4_total_column']
+  'CH4_total_column','nSurfStd','PBest','PGood','nBestStd','nGoodStd','TSurfStdErr','TSurfAirErr',$
+  'Temp_dof','PTropopause','T_Tropopause','totH2OStd','H2O_dof','GP_Tropopause','GP_Surface']
+bunits=[bunits,'K','K','hPa','g/kg','g/kg','percent',$
+  'cm-2','index','index','index','index','index','K','K','dof',$
+  'hPa','K','kg/m2','dof','m','m']
+
+
+
+
+
+;  "CldFrcTot",
+;  "CldFrcStd",
+;  "PCldTop",
+;  "TCldTop",
+;  "nCld",
+;  "totO3Std",
+;  "O3VMRStd",
+;  "O3VMRLevStd",
+;  "num_O3_Func",
+;  "O3_verticality",
+;  "O3_dof",
+;  "CO_total_column",
+;  "COVMRLevStd",
+;  "COVMRLevStdErr",
+;  "num_CO_Func",
+;  "CO_verticality",
+;  "CO_dof",
+;  "CH4_total_column",
+;  "CH4VMRLevStd",
+;  "num_CH4_Func",
+;  "CH4_verticality_10func",
+;  "CH4_dof",
+;  "TAirMWOnlyStd",
+;  "MWSurfClass",
+;  "sfcTbMWStd",
+;  "EmisMWStd",
+;  "EmisMWStdErr",
+;  "totH2OMWOnlyStd",
+;  "GP_Height_MWOnly",
+;  "MW_ret_used",
+;  "totCldH2OStd",  
+
 backnames=[backnames,l2names]
 bunits=[bunits,'K','K','hPa','mmr','mmr','percent','ch4']
 
-
+l2levvars=['TAirStd','GP_Height']
 levs=h2['StdPressureLev:L2_Standard_atmospheric&surface_product','_DATA']
 slevs=strtrim(string(levs,format='(F0.1)'),2)
-l2namesl='TAirStd_'+slevs
+l2namesl=[]
+foreach ll,l2levvars do l2namesl=[l2namesl,ll+'_'+slevs]
+nlevs=n_elements(levs)
 backnames=[backnames,l2namesl]
-bunits=[bunits,replicate('K',n_elements(levs))]
+bunits=[bunits,replicate('K',nlevs),replicate('m',nlevs)]
+
+hlevvars=['H2OMMRSatLevStd','H2OMMRLevStd','RelHum']
+hlevs=h2['H2OPressureLev:L2_Standard_atmospheric&surface_product','_DATA']
+shlevs=strtrim(string(hlevs,format='(I0)'),2)
+
+l2nameshlevs=[]
+foreach ll,hlevvars do l2nameshlevs=[l2nameshlevs,ll+'_'+shlevs]
+backnames=[backnames,l2nameshlevs]
+nhlevs=n_elements(hlevs)
+bunits=[bunits,replicate('g/kg',nhlevs),replicate('g/kg',nhlevs),replicate('percent',nhlevs)]
+
+hlayvars=['H2OMMRSat','H2OMMRStd']
+hlays=h2['H2OPressureLay:L2_Standard_atmospheric&surface_product','_DATA']
+shlays=strtrim(string(hlays,format='(I0)'),2)
+
+l2nameshlays=[]
+foreach ll, hlayvars do l2nameshlays=[l2nameshlays,ll+'_'+shlays]
+backnames=[backnames,l2nameshlays]
+nhlays=n_elements(hlays)
+bunits=[bunits,replicate('g/kg',nhlays),replicate('g/kg',nhlays)]
 
 nback=n_elements(backnames)
 backplanes=dblarr(nsamples,nlines,nback)+!values.d_nan
@@ -177,21 +240,34 @@ backplanes[*,*,2]=lat
 backplanes[*,*,7]=lon
 backplanes[*,*,12]=0d0 ;ALT
 
+ln=17
 foreach l1n,l1names,il1 do begin
-  ln=17+il1
-  backplanes[*,*,ln]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],l1n,airsres=airsres)
+  backplanes[*,*,ln++]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],l1n,airsres=airsres)
 endforeach
 
 szb=size(backplanes,/dimensions)
 
 foreach l2n,l2names,il2 do begin
-  ln2=ln+1+il2
-  backplanes[*,*,ln2]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],l2n,airsres=airsres)
+  ;print,l2n
+  backplanes[*,*,ln++]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],l2n,airsres=airsres)
 endforeach
 
+foreach levvar,l2levvars do begin
+  foreach lev,levs,il do begin
+    backplanes[*,*,ln++]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],levvar,airsres=airsres))[il,*,*])
+  endforeach
+endforeach
 
-foreach lev,levs,il do begin
-  backplanes[*,*,ln2+1+il]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TAirStd',airsres=airsres))[il,*,*])
+foreach hlevvar,hlevvars do begin
+  foreach hlev,hlevs,il do begin
+    backplanes[*,*,ln++]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],hlevvar,airsres=airsres))[il,*,*])
+  endforeach
+endforeach
+
+foreach hlayvar,hlayvars do begin
+  foreach hlay,hlays,il do begin
+    backplanes[*,*,ln++]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],hlayvar,airsres=airsres))[il,*,*])
+  endforeach
 endforeach
 
 
