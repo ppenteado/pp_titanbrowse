@@ -14,23 +14,40 @@ end
 function pp_airshdftocube_getfield,h,f,airsres=airsres
 compile_opt idl2,logical_predicate
 airsres=keyword_set(airsres)
-tmpb=h[f,'_DATA']
-tmpf=(h[f,'_FillValue','_DATA'])[0]
+if h[f].haskey('_DATA') then begin
+  tmpb=h[f,'_DATA']
+  tmpf=(h[f,'_FillValue','_DATA'])[0]
+endif else begin
+  tmpb=h[f,f,'_DATA']
+  if h[f,f].haskey('_FillValue') then tmpf=(h[f,'_FillValue','_DATA'])[0] else begin
+    if isa(tmpb,/integer) then begin
+      print,minmax(tmpb)
+    endif else tmpf=!values.d_nan
+  endelse
+endelse
 tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 sz=size(tmpb,/dimensions)
 case airsres of
   1: begin
-    if sz[-2] eq 30 then begin
+    if n_elements(sz) gt 1 && sz[-2] eq 30 then begin
       szn=sz
       szn[-2:-1]*=3
-      tmpb=congrid(tmpb,szn)
+      tmpb=n_elements(szn) eq 2 ? congrid(tmpb,szn[0],szn[1]) : congrid(tmpb,szn[0],szn[1],szn[2])
+    endif
+    if sz[-1] eq 135 then begin
+      szn=n_elements(sz) eq 1 ? [90,135] : [sz[0:-2],90,135]
+      tmpb=n_elements(szn) eq 2 ? congrid(tmpb,szn[0],szn[1]) : congrid(tmpb,szn[0],szn[1],szn[2])
     endif
   end
   0: begin
-    if sz[-2] eq 90 then begin
+    if n_elements(sz) gt 1 && sz[-2] eq 90 then begin
       szn=sz
       szn[-2:-1]/=3
-      tmpb=congrid(tmpb,szn[0],szn[1])
+      tmpb=n_elements(szn) eq 2 ? congrid(tmpb,szn[0],szn[1]) : congrid(tmpb,szn[0],szn[1],szn[2])
+    endif 
+    if sz[0] eq 135 then begin
+      szn=n_elements(sz) eq 1 ? [30,45] : [sz[0:-2],30,45]
+      tmpb=n_elements(szn) eq 2 ? congrid(reform(tmpb,[1,sz]),szn[0],szn[1]) : congrid(reform(tmpb,[1,sz]),szn[0],szn[1],szn[2])
     endif
   end
 endcase
@@ -204,18 +221,34 @@ foreach var,vars do begin
     bunits=[bunits,var eq 'ALT' ? 'KM' : 'DEGREE']
   endfor
 endforeach
-backnames=[backnames,"dust_flag","dust_score","spectral_clear_indicator","BT_diff_SO2"]
-backnames=[backnames,'TSurfAir','TSurfStd','PSurfStd','H2OMMRSatSurf','H2OMMRSurf','RelHumSurf',$
-  'CH4_total_column'];,'TAirStd_500','COVMRLevStd_500']
+l1names=["dust_flag","dust_score","spectral_clear_indicator","BT_diff_SO2",$
+  'sat_lat','sat_lon','satzen','satazi','solzen','solazi','glintlat','glintlon','sun_glint_distance','topog','landFrac']
+;backnames=[backnames,"dust_flag","dust_score","spectral_clear_indicator","BT_diff_SO2"]
+;backnames=[backnames,'sat_lat','sat_lon','satzen','satazi','solzen','solazi','glintlat','glintlon','sun_glint_distance','topog','landFrac'] 
+backnames=[backnames,l1names]
+bunits=[bunits,'dust_flag','dust_score','sci','K']
+bunits=[bunits,replicate('degree',8),'km','m','fraction']
+
+l2names=['TSurfAir','TSurfStd','PSurfStd','H2OMMRSatSurf','H2OMMRSurf','RelHumSurf',$
+  'CH4_total_column']
+;backnames=[backnames,'TSurfAir','TSurfStd','PSurfStd','H2OMMRSatSurf','H2OMMRSurf','RelHumSurf',$
+;  'CH4_total_column'];,'TAirStd_500','COVMRLevStd_500']
+backnames=[backnames,l2names]
+bunits=[bunits,'K','K','hPa','mmr','mmr','percent','ch4']
+
+
 levs=h2['StdPressureLev:L2_Standard_atmospheric&surface_product','_DATA']
 slevs=strtrim(string(levs,format='(F0.1)'),2)
-backnames=[backnames,'TAirStd_'+slevs]
+l2namesl='TAirStd_'+slevs
+backnames=[backnames,l2namesl]
+;backnames=[backnames,'TAirStd_'+slevs]
+bunits=[bunits,replicate('K',n_elements(levs))]
 
 nback=n_elements(backnames)
 backplanes=dblarr(nsamples,nlines,nback)+!values.d_nan
-bunits=[bunits,'dust_flag','dust_score','sci','K']
-bunits=[bunits,'K','K','hPa','mmr','mmr','percent','ch4']
-bunits=[bunits,replicate('K',n_elements(levs))]
+
+
+
 
 if airsres then begin
   lat=h1[l1t,'Geolocation Fields','Latitude','_DATA']
@@ -243,35 +276,42 @@ backplanes[*,*,2]=lat
 backplanes[*,*,7]=lon
 backplanes[*,*,12]=0d0 ;ALT
 
-backplanes[*,*,17]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'dust_flag',airsres=airsres);tmpb
-
-backplanes[*,*,18]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'dust_score',airsres=airsres);tmpb
-
-backplanes[*,*,19]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'spectral_clear_indicator',airsres=airsres);tmpb
-
-backplanes[*,*,20]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'BT_diff_SO2',airsres=airsres);tmpb
+foreach l1n,l1names,il1 do begin
+  ln=17+il1
+  backplanes[*,*,ln]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],l1n,airsres=airsres)
+endforeach
+;backplanes[*,*,17]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'dust_flag',airsres=airsres);tmpb
+;
+;backplanes[*,*,18]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'dust_score',airsres=airsres);tmpb
+;
+;backplanes[*,*,19]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'spectral_clear_indicator',airsres=airsres);tmpb
+;
+;backplanes[*,*,20]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'BT_diff_SO2',airsres=airsres);tmpb
 
 szb=size(backplanes,/dimensions)
 
-backplanes[*,*,21]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TSurfAir',airsres=airsres);congrid(tmpb,szb[0],szb[1])
+foreach l2n,l2names,il2 do begin
+  ln2=ln+1+il2
+  backplanes[*,*,ln2]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],l2n,airsres=airsres)
+endforeach
 
-backplanes[*,*,22]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TSurfStd',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-
-backplanes[*,*,23]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'PSurfStd',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-
-backplanes[*,*,24]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'H2OMMRSatSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-
-backplanes[*,*,25]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'H2OMMRSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-
-backplanes[*,*,26]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'RelHumSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
-
-;backplanes[*,*,27]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TAirStd',airsres=airsres))[6,*,*]);congrid(reform(tmpb[6,*,*]),szb[0],szb[1])
-;backplanes[*,*,28]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'COVMRLevStd',airsres=airsres))[6,*,*]);congrid(reform(tmpb[6,*,*]),szb[0],szb[1])
-
-backplanes[*,*,27]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'CH4_total_column',airsres=airsres);congrid(tmpb,szb[0],szb[1])
+;backplanes[*,*,21]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TSurfAir',airsres=airsres);congrid(tmpb,szb[0],szb[1])
+;
+;backplanes[*,*,22]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TSurfStd',airsres=airsres);congrid(tmpb,szb[0],szb[1])
+;
+;backplanes[*,*,23]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'PSurfStd',airsres=airsres);congrid(tmpb,szb[0],szb[1])
+;
+;backplanes[*,*,24]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'H2OMMRSatSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
+;
+;backplanes[*,*,25]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'H2OMMRSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
+;
+;backplanes[*,*,26]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'RelHumSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
+;
+;
+;backplanes[*,*,27]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'CH4_total_column',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
 foreach lev,levs,il do begin
-  backplanes[*,*,28+il]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TAirStd',airsres=airsres))[il,*,*])
+  backplanes[*,*,ln2+1+il]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TAirStd',airsres=airsres))[il,*,*])
 endforeach
 
 
