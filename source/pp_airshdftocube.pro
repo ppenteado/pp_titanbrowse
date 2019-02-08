@@ -239,71 +239,32 @@ backplanes[*,*,2]=lat
 backplanes[*,*,7]=lon
 backplanes[*,*,12]=0d0 ;ALT
 
-;tmpb=h1[l1t,'Data Fields','dust_flag','_DATA']
-;tmpf=(h1[l1t,'Data Fields','dust_flag','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,17]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'dust_flag',airsres=airsres);tmpb
 
-;tmpb=h1[l1t,'Data Fields','dust_score','_DATA']
-;tmpf=(h1[l1t,'Data Fields','dust_score','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,18]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'dust_score',airsres=airsres);tmpb
 
-;tmpb=h1[l1t,'Data Fields','spectral_clear_indicator','_DATA']
-;tmpf=(h1[l1t,'Data Fields','spectral_clear_indicator','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,19]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'spectral_clear_indicator',airsres=airsres);tmpb
 
-;tmpb=h1[l1t,'Data Fields','BT_diff_SO2','_DATA']
-;tmpf=(h1[l1t,'Data Fields','BT_diff_SO2','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,20]=pp_airshdftocube_getfield(h1[l1t,'Data Fields'],'BT_diff_SO2',airsres=airsres);tmpb
 
 szb=size(backplanes,/dimensions)
 
-;tmpb=h2['L2_Standard_atmospheric&surface_product','Data Fields','TSurfAir','_DATA']
-;tmpf=(h2['L2_Standard_atmospheric&surface_product','Data Fields','TSurfAir','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,21]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TSurfAir',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
-;tmpb=h2['L2_Standard_atmospheric&surface_product','Data Fields','TSurfStd','_DATA']
-;tmpf=(h2['L2_Standard_atmospheric&surface_product','Data Fields','TSurfStd','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,22]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TSurfStd',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
-;tmpb=h2['L2_Standard_atmospheric&surface_product','Data Fields','PSurfStd','_DATA']
-;tmpf=(h2['L2_Standard_atmospheric&surface_product','Data Fields','PSurfStd','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,23]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'PSurfStd',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
-;tmpb=h2['L2_Standard_atmospheric&surface_product','Data Fields','H2OMMRSatSurf','_DATA']
-;tmpf=(h2['L2_Standard_atmospheric&surface_product','Data Fields','H2OMMRSatSurf','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,24]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'H2OMMRSatSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
-;tmpb=h2['L2_Standard_atmospheric&surface_product','Data Fields','H2OMMRSurf','_DATA']
-;tmpf=(h2['L2_Standard_atmospheric&surface_product','Data Fields','H2OMMRSurf','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,25]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'H2OMMRSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
-;tmpb=h2['L2_Standard_atmospheric&surface_product','Data Fields','RelHumSurf','_DATA']
-;tmpf=(h2['L2_Standard_atmospheric&surface_product','Data Fields','RelHumSurf','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,26]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'RelHumSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
-;tmpb=h2['L2_Standard_atmospheric&surface_product','Data Fields','TAirStd','_DATA']
-;tmpf=(h2['L2_Standard_atmospheric&surface_product','Data Fields','TAirStd','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,27]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TAirStd',airsres=airsres))[6,*,*]);congrid(reform(tmpb[6,*,*]),szb[0],szb[1])
 
-;tmpb=h2['L2_Standard_atmospheric&surface_product','Data Fields','COVMRLevStd','_DATA']
-;tmpf=(h2['L2_Standard_atmospheric&surface_product','Data Fields','COVMRLevStd','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,28]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'COVMRLevStd',airsres=airsres))[6,*,*]);congrid(reform(tmpb[6,*,*]),szb[0],szb[1])
 
-;tmpb=h2['L2_Standard_atmospheric&surface_product','Data Fields','CH4_total_column','_DATA']
-;tmpf=(h2['L2_Standard_atmospheric&surface_product','Data Fields','CH4_total_column','_FillValue','_DATA'])[0]
-;tmpb[where(tmpb eq tmpf,/null)]=!values.d_nan
 backplanes[*,*,29]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'CH4_total_column',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
 wavs=1d4/l1fre
