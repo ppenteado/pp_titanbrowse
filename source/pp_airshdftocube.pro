@@ -206,12 +206,16 @@ foreach var,vars do begin
 endforeach
 backnames=[backnames,"dust_flag","dust_score","spectral_clear_indicator","BT_diff_SO2"]
 backnames=[backnames,'TSurfAir','TSurfStd','PSurfStd','H2OMMRSatSurf','H2OMMRSurf','RelHumSurf',$
-  'TAirStd_500','COVMRLevStd_500','CH4_total_column']
+  'CH4_total_column'];,'TAirStd_500','COVMRLevStd_500']
+levs=h2['StdPressureLev:L2_Standard_atmospheric&surface_product','_DATA']
+slevs=strtrim(string(levs,format='(F0.1)'),2)
+backnames=[backnames,'TAirStd_'+slevs]
 
 nback=n_elements(backnames)
 backplanes=dblarr(nsamples,nlines,nback)+!values.d_nan
 bunits=[bunits,'dust_flag','dust_score','sci','K']
-bunits=[bunits,'K','K','hPa','mmr','mmr','percent','K','mmr','ch4']
+bunits=[bunits,'K','K','hPa','mmr','mmr','percent','ch4']
+bunits=[bunits,replicate('K',n_elements(levs))]
 
 if airsres then begin
   lat=h1[l1t,'Geolocation Fields','Latitude','_DATA']
@@ -261,11 +265,15 @@ backplanes[*,*,25]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface
 
 backplanes[*,*,26]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'RelHumSurf',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
-backplanes[*,*,27]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TAirStd',airsres=airsres))[6,*,*]);congrid(reform(tmpb[6,*,*]),szb[0],szb[1])
+;backplanes[*,*,27]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TAirStd',airsres=airsres))[6,*,*]);congrid(reform(tmpb[6,*,*]),szb[0],szb[1])
+;backplanes[*,*,28]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'COVMRLevStd',airsres=airsres))[6,*,*]);congrid(reform(tmpb[6,*,*]),szb[0],szb[1])
 
-backplanes[*,*,28]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'COVMRLevStd',airsres=airsres))[6,*,*]);congrid(reform(tmpb[6,*,*]),szb[0],szb[1])
+backplanes[*,*,27]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'CH4_total_column',airsres=airsres);congrid(tmpb,szb[0],szb[1])
 
-backplanes[*,*,29]=pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'CH4_total_column',airsres=airsres);congrid(tmpb,szb[0],szb[1])
+foreach lev,levs,il do begin
+  backplanes[*,*,28+il]=reform((pp_airshdftocube_getfield(h2['L2_Standard_atmospheric&surface_product','Data Fields'],'TAirStd',airsres=airsres))[il,*,*])
+endforeach
+
 
 wavs=1d4/l1fre
 eh1=pp_eosparse(f1)
