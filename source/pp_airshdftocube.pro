@@ -16,7 +16,9 @@ compile_opt idl2,logical_predicate
 airsres=keyword_set(airsres)
 if h[f].haskey('_DATA') then begin
   tmpb=h[f,'_DATA']
-  tmpf=(h[f,'_FillValue','_DATA'])[0]
+  if h[f].haskey('_FillValue') then tmpf=(h[f,'_FillValue','_DATA'])[0] else begin
+    tmpf=!values.d_nan
+  endelse
 endif else begin
   tmpb=h[f,f,'_DATA']
   if h[f,f].haskey('_FillValue') then tmpf=(h[f,'_FillValue','_DATA'])[0] else begin
@@ -112,11 +114,6 @@ nlines=sz[2]
 nsamples=sz[1]
 
 
-
-
-
-
-
 core=transpose(l1rad,[1,2,0])
 backnames=['LATITUDE','LONGITUDE'];,'LAT_0','LON_0','ALT_0']
 bunits=['DEGREE','DEGREE'];,'DEGREE','DEGREE','KM']
@@ -135,58 +132,51 @@ bunits=[bunits,replicate('degree',8),'km','m','fraction']
 
 l2names=['TSurfAir','TSurfStd','PSurfStd','H2OMMRSatSurf','H2OMMRSurf','RelHumSurf',$
   'CH4_total_column','nSurfStd','PBest','PGood','nBestStd','nGoodStd','TSurfStdErr','TSurfAirErr',$
-  'Temp_dof','PTropopause','T_Tropopause','totH2OStd','H2O_dof','GP_Tropopause','GP_Surface']
+  'Temp_dof','PTropopause','T_Tropopause','totH2OStd','H2O_dof','GP_Tropopause','GP_Surface','CldFrcTot',$
+  'totO3Std','MWSurfClass','totH2OMWOnlyStd','totCldH2OStd',$
+  'CldFrcStd0','CldFrcStd1','PCldTop0','PCldTop1','TCldTop0','TCldTop1','nCld0']
 bunits=[bunits,'K','K','hPa','g/kg','g/kg','percent',$
   'cm-2','index','index','index','index','index','K','K','dof',$
-  'hPa','K','kg/m2','dof','m','m']
+  'hPa','K','kg/m2','dof','m','m','fraction','DU','class','kg/m2','kg/m2',$
+  'fraction','fraction','hPa','hPa','K','K','n']
 
 
+h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd0']=h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd']
+h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd0','_NDIMENSIONS']=2L
+h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd0','_DIMENSIONS']=[90,135]
+tmpd=h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd','_DATA']
+h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd0','_DATA']=reform(tmpd[0,*,*,*,*],90,135)
+h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd1']=h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd0']
+h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd1','_DATA']=reform(tmpd[1,*,*,*,*],90,135)
 
+h2['L2_Standard_atmospheric&surface_product','Data Fields','PCldTop0']=h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd0']
+tmpd=h2['L2_Standard_atmospheric&surface_product','Data Fields','PCldTop','_DATA']
+h2['L2_Standard_atmospheric&surface_product','Data Fields','PCldTop0','_DATA']=reform(tmpd[0,*,*,*,*],90,135)
+h2['L2_Standard_atmospheric&surface_product','Data Fields','PCldTop1']=h2['L2_Standard_atmospheric&surface_product','Data Fields','PCldTop0']
+h2['L2_Standard_atmospheric&surface_product','Data Fields','PCldTop1','_DATA']=reform(tmpd[1,*,*,*,*],90,135)
 
+h2['L2_Standard_atmospheric&surface_product','Data Fields','TCldTop0']=h2['L2_Standard_atmospheric&surface_product','Data Fields','CldFrcStd0']
+tmpd=h2['L2_Standard_atmospheric&surface_product','Data Fields','TCldTop','_DATA']
+h2['L2_Standard_atmospheric&surface_product','Data Fields','TCldTop0','_DATA']=reform(tmpd[0,*,*,*,*],90,135)
+h2['L2_Standard_atmospheric&surface_product','Data Fields','TCldTop1']=h2['L2_Standard_atmospheric&surface_product','Data Fields','TCldTop0']
+h2['L2_Standard_atmospheric&surface_product','Data Fields','TCldTop1','_DATA']=reform(tmpd[1,*,*,*,*],90,135)
 
-;  "CldFrcTot",
-;  "CldFrcStd",
-;  "PCldTop",
-;  "TCldTop",
-;  "nCld",
-;  "totO3Std",
-;  "O3VMRStd",
-;  "O3VMRLevStd",
-;  "num_O3_Func",
-;  "O3_verticality",
-;  "O3_dof",
-;  "CO_total_column",
-;  "COVMRLevStd",
-;  "COVMRLevStdErr",
-;  "num_CO_Func",
-;  "CO_verticality",
-;  "CO_dof",
-;  "CH4_total_column",
-;  "CH4VMRLevStd",
-;  "num_CH4_Func",
-;  "CH4_verticality_10func",
-;  "CH4_dof",
-;  "TAirMWOnlyStd",
-;  "MWSurfClass",
-;  "sfcTbMWStd",
-;  "EmisMWStd",
-;  "EmisMWStdErr",
-;  "totH2OMWOnlyStd",
-;  "GP_Height_MWOnly",
-;  "MW_ret_used",
-;  "totCldH2OStd",  
+h2['L2_Standard_atmospheric&surface_product','Data Fields','nCld0']=h2['L2_Standard_atmospheric&surface_product','Data Fields','nCld']
+tmpd=h2['L2_Standard_atmospheric&surface_product','Data Fields','nCld','_DATA']
+h2['L2_Standard_atmospheric&surface_product','Data Fields','nCld0','_DATA']=reform(tmpd[*,*,*,*],90,135)
 
 backnames=[backnames,l2names]
 bunits=[bunits,'K','K','hPa','mmr','mmr','percent','ch4']
 
-l2levvars=['TAirStd','GP_Height']
+l2levvars=['TAirStd','GP_Height','O3VMRLevStd','COVMRLevStd','CH4VMRLevStd','TAirMWOnlyStd']
 levs=h2['StdPressureLev:L2_Standard_atmospheric&surface_product','_DATA']
 slevs=strtrim(string(levs,format='(F0.1)'),2)
 l2namesl=[]
 foreach ll,l2levvars do l2namesl=[l2namesl,ll+'_'+slevs]
 nlevs=n_elements(levs)
 backnames=[backnames,l2namesl]
-bunits=[bunits,replicate('K',nlevs),replicate('m',nlevs)]
+bunits=[bunits,replicate('K',nlevs),replicate('m',nlevs),replicate('vmr',nlevs),$
+  replicate('vmr',nlevs),replicate('vmr',nlevs),replicate('K',nlevs)]
 
 hlevvars=['H2OMMRSatLevStd','H2OMMRLevStd','RelHum']
 hlevs=h2['H2OPressureLev:L2_Standard_atmospheric&surface_product','_DATA']
