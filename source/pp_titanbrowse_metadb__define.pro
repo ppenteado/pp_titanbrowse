@@ -74,6 +74,7 @@ for i=1,nback-1 do btmp=create_struct(btmp,tnames[i],!values.d_nan)
 ;Temporary places to keep cube metadata
 void={usecube:0B,ocube:obj_new(),rev:'',seq:'',seq_title:'',prod_id:'',start:'',stop:'',nat_start:0d0,$
  lines:0L,samples:0L,pixels:0L,surf_pixels:0L,exposure:0d0,ir_mode:'',vis_mode:'',file:'',$
+ year:0,doy:0,month:0,day:0,id0:0L,id1:0L,jday:0d0,instrument:'',$
  back_max:btmp,back_min:btmp}
 cinfo=replicate(void,self.ncubes)
 print,'Building metadb file, this may take a long time and use a lot of memory if there are many cubes'
@@ -113,6 +114,14 @@ for i=0L,self.ncubes-1 do begin
     cinfo[i].vis_mode=tmp[1<(n_elements(tmp)-1)]
     cinfo[i].ocube->getproperty,file=file
     cinfo[i].file=file
+    cinfo[i].year=cinfo[i].ocube.year
+    cinfo[i].doy=cinfo[i].ocube.doy
+    cinfo[i].month=cinfo[i].ocube.month
+    cinfo[i].day=cinfo[i].ocube.day
+    cinfo[i].id0=cinfo[i].ocube.id0
+    cinfo[i].id1=cinfo[i].ocube.id1
+    cinfo[i].jday=cinfo[i].ocube.jday
+    cinfo[i].instrument=cinfo[i].ocube.instrument
 ;Get ranges for pixel-variable metadata
     for j=0,nback-1 do begin
       tmp=cinfo[i].ocube->getsuffixbyname(bnames[j])
