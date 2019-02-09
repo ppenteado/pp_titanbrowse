@@ -239,6 +239,22 @@ function pp_airscube::getfromheader,key,history=hist,$
   return,ret
 end
 
+pro pp_airscube::getproperty,_ref_extra=ex,$
+  year=year,doy=doy,month=month,day=day,id0=id0,id1=id1,instrument=instrument,jday=jday
+compile_opt idl2,logical_predicate
+if arg_present(year) then year=(*self.labels)['year']
+if arg_present(month) then month=(*self.labels)['month']
+if arg_present(day) then day=(*self.labels)['day']
+if arg_present(doy) then doy=(*self.labels)['doy']
+if arg_present(hour) then hour=(*self.labels)['hour']
+if arg_present(minu) then minu=(*self.labels)['minu']
+if arg_present(sec) then sec=(*self.labels)['sec']
+if arg_present(id0) then id0=(*self.labels)['id0']
+if arg_present(id1) then id1=(*self.labels)['id1']
+if arg_present(instrument) then instrument=(*self.labels)['instrument']
+if arg_present(jday) then jday=(*self.labels)['jday']
+if n_elements(ex) then self.pp_editablecube::getproperty,_strict_extra=ex
+end
 
 
 ;+
