@@ -407,7 +407,9 @@ pro pp_cube::getproperty,all=all,file=file,special=special,labels=labels,history
  core=core,backplanes=backplanes,sideplanes=sideplanes,bottomplanes=bottomplanes,$
  info=info,lines=lines,bands=bands,samples=samples,nback=nback,nside=nside,nbottom=nbottom,$
  rawdata=raw,wavelengths=wavs,backnames=bnames,sidenames=snames,bottomnames=bonames,$
- units=wunits,backunits=bunits,sideunits=sunits,bottomunits=bounits,struct_backplanes=struct_backplanes
+ units=wunits,backunits=bunits,sideunits=sunits,bottomunits=bounits,struct_backplanes=struct_backplanes,$
+ year=year,doy=doy,month=month,day=day,hour=hour,minu=minu,sec=sec,id0=id0,id1=id1,date=date,jday=jday,$
+ instrument=instrument
 compile_opt idl2
 
 all=arg_present(all)
@@ -445,12 +447,28 @@ if (all || arg_present(struct_backplanes)) then begin
   endif else struct_backplanes=ptr_new()
 endif
 
+if (all || arg_present(year)) then year=-1
+if (all || arg_present(doy)) then doy=-1
+if (all || arg_present(month)) then month=-1
+if (all || arg_present(day)) then day=-1
+if (all || arg_present(id0)) then id0=-1L
+if (all || arg_present(id1)) then id1=-1L
+if (all || arg_present(hour)) then hour=-1L
+if (all || arg_present(minu)) then minu=-1L
+if (all || arg_present(sec)) then sec=0d0
+if (all || arg_present(date)) then date=''
+if (all || arg_present(jday)) then jday=!values.d_nan
+if (all || arg_present(instrument)) then instrument=''
+
+
 if all then all={file:file,special:special,labels:labels,history:history,core:core,$
    backplanes:backplanes,sideplanes:sideplanes,bottomplanes:bottomplanes,$
    info:info,lines:lines,samples:samples,bands:bands,$
    nback:nback,nside:nside,nbottom:nbottom,$
    raw:raw,wavelengths:wavs,backnames:bnames,sidenames:snames,bottomnames:bonames,$
-   units:wunits,backunits:bunits,sideunits:sunits,bottomunits:bounits,struct_backplanes:struct_backplanes}
+   units:wunits,backunits:bunits,sideunits:sunits,bottomunits:bounits,struct_backplanes:struct_backplanes,$
+   year:year,doy:doy,month:month,day:day,hour:hour,minu:minu,sec:sec,id0:id0,id1:id1,date:date,jday:jday,$
+   instrument:instrument}
    
 end
 
