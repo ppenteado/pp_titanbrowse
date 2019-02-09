@@ -267,6 +267,18 @@ eh2=pp_eosparse(f2)
 h0=eh1+eh2
 h0['nadirTAI']=h1[l1t,'Data Fields','nadirTAI','nadirTAI','_DATA']
 h0['tmfile']=tmfile
+attr=eh2["L2_Standard_atmospheric&surface_product",'attributes']
+h0['instrument']=attr['instrument']
+h0['year']=(attr['start_year'])[0]
+h0['month']=(attr['start_month'])[0]
+h0['day']=(attr['start_day'])[0]
+h0['hour']=(attr['start_hour'])[0]
+h0['minu']=(attr['start_minute'])[0]
+h0['sec']=(attr['start_sec'])[0]
+h0['id0']=(attr['granule_number'])[0]
+h0['doy']=julday(h0['month'],h0['day'],h0['year'])-julday(1,0,h0['year'])
+h0['id1']=h0['year']*1000000+h0['doy']*1000+h0['id0']
+h0['jday']=julday(h0['month'],h0['day'],h0['year'],h0['hour'],h0['minu'],h0['sec'])
 ret={core:core,wavs:wavs,backplanes:backplanes,backnames:backnames,header:h0,bunits:bunits}
 
 if ~keyword_set(nounload) then cspice_kclear
