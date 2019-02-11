@@ -151,7 +151,9 @@ endif else begin
   bmin=btmp & bmax=btmp
   for i=0,nback-1 do bmin.(i)=cinfo[*].back_min.(i)
   for i=0,nback-1 do bmax.(i)=cinfo[*].back_max.(i)  
-  cmd={rev:cinfo.rev,seq:cinfo.seq,seq_title:cinfo.seq_title,$
+  cmd={year:cinfo.year,doy:cinfo.doy,month:cinfo.month,day:cinfo.day,id0:cinfo.id0,$
+    id1:cinfo.id1,jday:cinfo.jday,instrument:cinfo.instrument,$
+   rev:cinfo.rev,seq:cinfo.seq,seq_title:cinfo.seq_title,$
    prod_id:cinfo.prod_id,start:cinfo.start,stop:cinfo.stop,nat_start:cinfo.nat_start,$
    lines:cinfo.lines,samples:cinfo.samples,pixels:cinfo.pixels,surf_pixels:cinfo.surf_pixels,$
    exposure:cinfo.exposure,ir_mode:cinfo.ir_mode,vis_mode:cinfo.vis_mode,file:cinfo.file,$
@@ -182,7 +184,7 @@ end
 function pp_titanbrowse_metadb::getncmd
   ;Retrieves the pointer to the cube metadata structure
   compile_opt idl2, hidden
-  if ~ptr_valid(ncmd) then begin
+  if ~ptr_valid(self.ncmd) then begin
     cmd=self.getcmd()
     h=orderedhash(*cmd)
     h.remove,["BACK_MIN","BACK_MAX"]
@@ -194,6 +196,25 @@ function pp_titanbrowse_metadb::getncmd
     self.ncmd=ptr_new(ncmd)
   endif else ncmd=*(self.ncmd)
   return,ncmd
+end
+
+function pp_titanbrowse_metadb::gettcmd
+  ;Retrieves the pointer to the cube metadata structure
+  compile_opt idl2, hidden
+  if ~ptr_valid(self.tcmd) then begin
+    cmd=self.getcmd()
+    h=orderedhash(*cmd)
+    h.remove,["BACK_MIN","BACK_MAX"]
+    tcmd=pp_structtransp(h.tostruct())
+    bmax=(*cmd).back_max
+    bmin=(*cmd).back_min
+    tmp=pp_structtransp(bmin)
+    tcmd=pp_appendcolumn(tcmd,'back_min',tmp)
+    tmp=pp_structtransp(bmax)
+    tcmd=pp_appendcolumn(tcmd,'back_max',tmp)
+    self.tcmd=ptr_new(tcmd)
+  endif else tcmd=*(self.tcmd)
+  return,tcmd
 end
 
 function pp_titanbrowse_metadb::getcubevars,level
@@ -245,5 +266,6 @@ pro pp_titanbrowse_metadb__define
 compile_opt idl2
 void={pp_titanbrowse_metadb,inherits pp_cubecollection,modind:0L,cmd:ptr_new(),$
  idstring:strarr(2),std:{pp_titanbrowse_metadb_std,bands:0L,nback:0L,wavs:ptr_new(),$
- bnames:ptr_new(),tnames:ptr_new(),unit:'',bunits:ptr_new(),type:0,fill:ptr_new()},ncmd:ptr_new()}
+ bnames:ptr_new(),tnames:ptr_new(),unit:'',bunits:ptr_new(),type:0,fill:ptr_new()},ncmd:ptr_new(),$
+ tcmd:ptr_new()}
 end
