@@ -103,7 +103,9 @@ tnames=tag_names(cmd.back_max) & nback=n_elements(tnames)
 btmp=create_struct(tnames[0],0d0)
 for i=1,nback-2 do btmp=create_struct(btmp,tnames[i],0d0)
 btmp=create_struct(name='pp_titanbrowse_cmd_back',btmp,tnames[nback-1],0d0)
-cmd={pp_titanbrowse_cmd,rev:'',seq:'',seq_title:'',$
+cmd={pp_titanbrowse_cmd,$
+ year:0,doy:0,month:0,day:0,id0:0L,id1:0L,jday:0d0,instrument:'',$
+ rev:'',seq:'',seq_title:'',$
  prod_id:'',start:'',stop:'',nat_start:'',$
  lines:0L,samples:0L,pixels:0L,surf_pixels:0L,$
  exposure:0d0,ir_mode:'',vis_mode:'',file:'',$
@@ -647,18 +649,23 @@ if (nf gt 0)&&(nc gt 0)&&(nf eq nc) then begin ;Selection by file and cube index
   for i=0,nf-1 do begin
     if ((i eq 0) || (finds[i] ne finds[i-1])) then begin
       cmd=*((*self.podb)[finds[i]]->getcmd())
+      ncmd=((*self.podb)[finds[i]]->gettcmd())
       names=(*self.podb)[finds[i]]->filenames()
     endif
     cind=cinds[i]
     if arg_present(cobj) then cobj[i]=*((*self.podb)[finds[i]])->getcube(cind)
     ret[i].cubefile=names[cind]
-;Convert the elements from the cmd fields into the fields of ret
-;Only works this because both were defined with matching fields
-    for j=0,n_tags(cmd)-3 do ret[i].(j)=cmd.(j)[cind]
-    for j=0,n_tags(cmd.back_max)-1 do begin
-      ret[i].back_max.(j)=cmd.back_max.(j)[cind]
-      ret[i].back_min.(j)=cmd.back_min.(j)[cind]
-    endfor
+    reti=ret[i]
+    struct_assign,ncmd[cind],reti,/nozero
+    ret[i]=reti
+    
+;    ;Convert the elements from the cmd fields into the fields of ret
+;    ;Only works this because both were defined with matching fields
+;    for j=0,n_tags(cmd)-3 do ret[i].(j)=cmd.(j)[cind]
+;    for j=0,n_tags(cmd.back_max)-1 do begin
+;      ret[i].back_max.(j)=cmd.back_max.(j)[cind]
+;      ret[i].back_min.(j)=cmd.back_min.(j)[cind]
+;    endfor
   endfor
 endif else message,'Invalid selection specification'
 return,ret
