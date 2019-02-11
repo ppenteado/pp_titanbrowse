@@ -37,9 +37,9 @@ if (n_elements(file) ne 1) then begin
   return,ret
 endif else if (file eq '') then return,ret ;Silently get out to allow the trick in pp_cubecollection::init
 
-root=stregex(file,'(AIRS.([[:digit:]]{4})\.([[:digit:]]{2})\.([[:digit:]]{2}))\.[[:digit:]]{3}\..*hdf',/extract,/subexpr)
-sequencetitle=n_elements(sequencetitle) ? sequencetitle : root[1]
-sequenceid=n_elements(sequenceid) ? sequenceid : 'AIRS.'+root[2]+'.'+string(julday(root[3],root[4],root[2])-julday(1,0,root[2]),format='(I03)')
+root=stregex(file,'(AIRS.((([[:digit:]]{4})\.([[:digit:]]{2})\.([[:digit:]]{2}))\.([[:digit:]]{3})))\..*hdf',/extract,/subexpr)
+sequencetitle=n_elements(sequencetitle) ? sequencetitle : root[3]
+sequenceid=n_elements(sequenceid) ? sequenceid : root[4]+'.'+string(julday(root[5],root[6],root[4])-julday(1,0,root[4]),format='(I03)')
 
 
 
@@ -57,6 +57,7 @@ endif else begin
   self.labels=ptr_new(tmp.header)
   tmp.header['SEQUENCE_ID']=sequenceid
   tmp.header['SEQUENCE_TITLE']=sequencetitle
+  tmp.header['PRODUCT_ID']=root[2]
   tlabels=string(tmp.header,/implied_print)
   self.tlabels=ptr_new(tlabels)
   self.history=ptr_new(tmp.header)
@@ -159,7 +160,7 @@ function pp_airscube::parselabels
 
   tmp.header['SAMPLING_MODE_ID']='NORMAL'
   tmp.header['SAMPLING_MODE_ID']='NORMAL'
-  tmp.header['PRODUCT_ID']=file_basename(self.file)
+  ;tmp.header['PRODUCT_ID']=file_basename(self.file)
   time0='1993-01-01T00:00:00'
   cspice_furnsh,tmp.header['tmfile']
   cspice_str2et,time0,et0
