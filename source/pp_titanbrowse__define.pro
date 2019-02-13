@@ -18,8 +18,10 @@ vis=n_elements(vis) eq 1 ? vis : 0
 channel=vis ? 'vis' : 'ir'
 nfiles=n_elements(mdbfiles)
 if nfiles eq 0 then begin
-  mdbfiles=file_search('titanbrowse*.sav')
-  mdbfiles=mdbfiles[where(~stregex(mdbfiles,'db.sav$',/boolean))] 
+  mdbfiles=file_search('titanbrowse_d_*.sav')
+  mdbfiles=mdbfiles[where(~stregex(mdbfiles,'db.sav$',/boolean),/null)]
+  if n_elements(mdfiles) eq 0 then mdbfiles=file_search('covims_*_'+channel+'.sav',count=nfiles)
+  nfiles=n_elements(mdbfiles) 
 endif
 ;mdbfiles=nfiles gt 0 ? mdbfiles : file_search('covims_*_'+channel+'.sav',count=nfiles)
 if n_elements(cubes) then begin
