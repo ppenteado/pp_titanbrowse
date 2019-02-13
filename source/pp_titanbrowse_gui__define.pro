@@ -14,7 +14,7 @@
 
 function pp_titanbrowse_gui::init,mdbfiles,vis=vis,_ref_extra=_ex
 compile_opt idl2,logical_predicate
-self.version='20151020'
+self.version='201901'
 ;Initialize db
 self.db=obj_new('pp_titanbrowse',mdbfiles,vis=vis,_strict_extra=_ex)
 self.db->getproperty,version=dbversion
