@@ -21,9 +21,9 @@ amsu=keyword_set(amsu)
 hsb=amsu ? 0B : keyword_set(hsb)
 airs=(hsb || amsu) ? 0B : 1
 if keyword_set(rectangles) then begin
-  airs=0
-  hsb=0
-  amsu=0
+  ;airs=0
+  ;hsb=0
+  ;amsu=0
 endif else rectangles=0
 
 ;scan angle: 3.3° diameter, all adjacent
