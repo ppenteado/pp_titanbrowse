@@ -20,7 +20,7 @@ nfiles=n_elements(mdbfiles)
 if nfiles eq 0 then begin
   mdbfiles=file_search('titanbrowse_d_*.sav')
   mdbfiles=mdbfiles[where(~stregex(mdbfiles,'db.sav$',/boolean),/null)]
-  if n_elements(mdfiles) eq 0 then mdbfiles=file_search('covims_*_'+channel+'.sav',count=nfiles)
+  if n_elements(mdbfiles) eq 0 then mdbfiles=file_search('covims_*_'+channel+'.sav',count=nfiles)
   nfiles=n_elements(mdbfiles) 
 endif
 ;mdbfiles=nfiles gt 0 ? mdbfiles : file_search('covims_*_'+channel+'.sav',count=nfiles)
