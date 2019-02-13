@@ -230,7 +230,7 @@ ptr_free,*self.pbands,*self.pbacks
 end
 
 pro pp_titanbrowse_db::getproperty,std=std,pstart=pstart,used_memory=used_memory,$
-  revs=revs,seqs=seqs,seqh=seqh,cubesh=cubesh,backinds=backinds
+  revs=revs,seqs=seqs,seqh=seqh,cubesh=cubesh,backinds=backinds,backnames=backnames
 compile_opt idl2
 if arg_present(std) then std=self.std
 if arg_present(pstart) then pstart=self.pstart
@@ -286,11 +286,12 @@ if isa(sub1,/integer) then begin
   ret=*(self.getband(sub1,/pointer))
 endif
 if isa(sub1,/string) then begin
-  self.getproperty,backinds=bi
-  inds=lonarr(n_elements(sub1))
+  self.getproperty,backinds=bi,backnames=bn
+  inds=list()
   foreach s,sub1,iind do begin
-    inds[iind]=bi[s]
+    inds.add,where(strmatch(bn,s,/fold_case),/null),/extract
   endforeach
+  inds=inds.toarray()
   ret=list()
   rr=self.getbackplane(inds,/pointer)
   foreach r,rr do ret.add,*r
