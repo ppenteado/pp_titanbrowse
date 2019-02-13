@@ -267,6 +267,7 @@ if arg_present(backinds) && ~obj_valid(self.backinds) then begin
   self.backinds=pp_locate((*self.std.bnames))
 endif
 backinds=(self.backinds)[*]
+if arg_present(backnames) then backnames=*self.std.bnames
 end
 
 pro pp_titanbrowse_db::cleanup
@@ -286,8 +287,15 @@ if isa(sub1,/integer) then begin
 endif
 if isa(sub1,/string) then begin
   self.getproperty,backinds=bi
-  ind=bi[sub1]
-  ret=*((self.getbackplane(ind,/pointer))[0])
+  inds=lonarr(n_elements(sub1))
+  foreach s,sub1,iind do begin
+    inds[iind]=bi[s]
+  endforeach
+  ret=list()
+  rr=self.getbackplane(inds,/pointer)
+  foreach r,rr do ret.add,*r
+  ret=ret.toarray(/transpose)
+  ;ret=*((self.getbackplane(inds,/pointer))[0])
 endif
 if (n_params() gt 2) then ret=ret[sub2]
 return,ret
