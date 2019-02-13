@@ -248,10 +248,11 @@ count=total(*self.nselcubes,/integer)
 if ~bytable then self->selectpixels,/none
 end
 
-pro pp_titanbrowse::selectpixels,iexpr,all=all,none=none,count=count,eval=eval,whereres=whereres
+pro pp_titanbrowse::selectpixels,iexpr,all=all,none=none,count=count,eval=eval,whereres=whereres,type=type
 ;Changes the current pixel selection, to all pixels or no pixels, or filter the selection with the given expression.
 ;iexpr must already be in the internal format (expressions built with aliases must be parsed to make them valid here).
-compile_opt idl2
+compile_opt idl2,logical_predicate
+type=n_elements(type) ? type : 0
 eval=keyword_set(eval)
 if keyword_set(none) then begin ;If selection is to be cleared
   (*self.nselpixels)[*]=0L
@@ -302,7 +303,20 @@ endif else if ((n_elements(iexpr) eq 1) or n_elements(whereres) gt 0) then begin
       w=whereres[i]
       count=long(n_elements(w))
     endif else begin
-      tmp=execute('nsel='+expr)
+      if type then begin
+        c=(*self.podb)[i]
+        catch,err
+        if err then begin
+          catch,/cancel
+          tmp=0
+        endif else begin
+          nsel=(call_function(lambda('c:'+expr),c))[sel]
+          catch,/cancel
+          tmp=1
+        endelse
+      endif else begin
+        tmp=execute('nsel='+expr)
+      endelse
 ;Make the new selection
       if tmp then w=where(nsel,count,/l64) else begin
         print,'pp_titanbrowse::selectpixels: Expression evaluation error'
@@ -323,8 +337,9 @@ count=long(total(*self.nselpixels))
 self.update=1B
 end
 
-function pp_titanbrowse::evalexpr,iexpr,store=store,cube=cube
+function pp_titanbrowse::evalexpr,iexpr,store=store,cube=cube,type=type
 compile_opt idl2,logical_predicate
+type=n_elements(type) ? type : 0
 cube=keyword_set(cube)
 expr=strtrim(iexpr,2)
 if (~cube) then begin
@@ -337,7 +352,22 @@ if (~cube) then begin
   for i=0,self.nfiles-1 do if ((*self.nselpixels)[i] gt 0) then begin ;Skip files with no pixels selected
     ;Make sel and to be used in expr
     sel=*((*self.selpixels)[i]) ;Indexes of selected pixels
-    tmp=execute('nsel='+expr)
+    ;tmp=execute('nsel='+expr)
+    if type then begin
+      c=(*self.podb)[i]
+      catch,err
+      if err then begin
+        catch,/cancel
+        tmp=0
+      endif else begin
+        nsel=(call_function(lambda('c:'+expr),c))[sel]
+        catch,/cancel
+        tmp=1
+      endelse
+    endif else begin
+      tmp=execute('nsel='+expr)
+    endelse
+
     if tmp then w=where(nsel,count,/l64) else begin
       print,'pp_titanbrowse::selectpixels: Expression evaluation error'
       break
@@ -395,7 +425,7 @@ return,res
 
 end
 
-function pp_titanbrowse::parseexpr,iexpr,cubes=cubes,pixels=pixels
+function pp_titanbrowse::parseexpr,iexpr,cubes=cubes,pixels=pixels,type=type
 ;Converts the occurences of pseudovariables in expr into the proper
 ;internal variable references. If cubes is not set, conversion is for
 ;pixel variable names, in which case the needed heap variables are loaded.
@@ -404,11 +434,16 @@ compile_opt idl2
 
 ;Defaults
 cubes=keyword_set(cubes) ? 1B : keyword_set(pixels) ? 0B : 1B
+type=0
 pixels=~cubes
 ret=iexpr
 if cubes then return,ret ;Parse cube pseudovariables
 ;Parse pixel pseudovariables
 ret=iexpr
+if ~(stregex(ret,'_b_([[:alnum:]_]+)_',/boolean) || stregex(ret,'_c_([[:digit:]]+)_',/boolean)) then begin
+  type=1
+  return,ret
+endif
 ;Parse backplane pseudovariables
 binds=hash()
 while stregex(ret,'_b_([[:alnum:]_]+)_',/boolean) do begin

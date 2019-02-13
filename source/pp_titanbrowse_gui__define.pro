@@ -253,14 +253,14 @@ switch ename of
       endelse
     endif else begin
       if ev then begin
-        pexpr=self.db->parseexpr(strmid(val,1),/pixel)
+        pexpr=self.db->parseexpr(strmid(val,1),/pixel,type=type)
         widget_control,/hourglass
-        !null=self.db.evalexpr(pexpr,/store)
+        !null=self.db.evalexpr(pexpr,/store,type=type)
         self.lastpixexpr=strmid(val,1)
       endif else begin
-        pexpr=self.db->parseexpr(val,/pixel)
+        pexpr=self.db->parseexpr(val,/pixel,type=type)
         widget_control,/hourglass
-        self.db->selectpixels,pexpr,count=count
+        self.db->selectpixels,pexpr,count=count,type=type
       endelse
     endelse
     event.handler->sendmessage,'updatelist',data=self.db
