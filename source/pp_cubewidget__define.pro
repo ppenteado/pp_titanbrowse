@@ -169,15 +169,15 @@ if (obj_valid(self.cube)) then begin
     endif
     lat=self.flip ? reverse(lat,2) : lat
     lon=self.flip ? reverse(lon,2) : lon
-    contour,lat,/noerase,color=fsc_color('red'),xstyle=1,ystyle=1,nlevels=21,xmargin=[0,0],ymargin=[0,0]
-    contour,lon,/noerase,color=fsc_color('red'),xstyle=1,ystyle=1,nlevels=21,xmargin=[0,0],ymargin=[0,0]
+    contour,lat,/noerase,color=cgcolor('red'),xstyle=1,ystyle=1,nlevels=21,xmargin=[0,0],ymargin=[0,0]
+    contour,lon,/noerase,color=cgcolor('red'),xstyle=1,ystyle=1,nlevels=21,xmargin=[0,0],ymargin=[0,0]
   endif
   if (self.band_mode eq 1B) && ptr_valid(self.band_im) then begin
     szcont=size(*self.band_im,/dimensions)
     xcont=dindgen(szcont[0])-0.5d0
     ycont=dindgen(szcont[1])-0.5d0
     sbim=self.flip ? reverse(*self.band_im,2) : *self.band_im
-    contour,sbim,xcont,ycont,color=fsc_color('blue'),nlevels=21,xstyle=1,ystyle=1,/noerase,$
+    contour,sbim,xcont,ycont,color=cgcolor('blue'),nlevels=21,xstyle=1,ystyle=1,/noerase,$
       xmargin=[0,0],ymargin=[0,0],xrange=[0,szcont[0]-1],yrange=[0,szcont[1]-1]
   endif
   if (self.backplane_mode eq 1B) && ptr_valid(self.backplane_im) then begin
@@ -185,7 +185,7 @@ if (obj_valid(self.cube)) then begin
    xcont=dindgen(szcont[0])-0.5d0
    ycont=dindgen(szcont[1])-0.5d0
    sbim=self.flip ? reverse(*self.backplane_im,2) : *self.backplane_im
-   contour,sbim,xcont,ycont,color=fsc_color('green'),nlevels=21,xstyle=1,ystyle=1,/noerase,$
+   contour,sbim,xcont,ycont,color=cgcolor('green'),nlevels=21,xstyle=1,ystyle=1,/noerase,$
      xmargin=[0,0],ymargin=[0,0],xrange=[0,szcont[0]-1],yrange=[0,szcont[1]-1]
   endif
 endif

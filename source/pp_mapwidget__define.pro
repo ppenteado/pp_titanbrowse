@@ -132,11 +132,11 @@ if (self.cube && ptr_valid(self.data)) then begin
       endif
     endif
     ;xy=map_proj_forward(-lons,lats,map_structure=self.mapstructure,polygons=polygons)
-    ;for i=0L,np-1L do oplot,xy[0,i*5:(i+1)*5-1],xy[1,i*5:(i+1)*5-1],color=fsc_color('blue')
+    ;for i=0L,np-1L do oplot,xy[0,i*5:(i+1)*5-1],xy[1,i*5:(i+1)*5-1],color=cgcolor('blue')
     for i=0L,np-1L do begin
       xy=map_proj_forward(-lons[i*5:(i+1)*5-1],lats[i*5:(i+1)*5-1],map_structure=self.mapstructure,polygons=polygons)
       po=pp_connectivity_list(polygons)
-      foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=fsc_color('blue')
+      foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=cgcolor('blue')
     endfor
   endif else begin
     sz=size((*self.data).clons)
@@ -156,25 +156,25 @@ if (self.cube && ptr_valid(self.data)) then begin
     if (nd eq 1) then begin
       xy=map_proj_forward(-lons,lats,map_structure=self.mapstructure,polyline=polyline)
       po=pp_connectivity_list(polyline)
-      foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=fsc_color('green')       
-      ;oplot,xy[0,*],xy[1,*],color=fsc_color('green')
+      foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=cgcolor('green')       
+      ;oplot,xy[0,*],xy[1,*],color=cgcolor('green')
     endif else begin
       ;lats=reform(reform(xy[1,*]),sz[1],sz[2])
       ;lons=reform(reform(xy[0,*]),sz[1],sz[2])
       ;for i=0L,sz[1]-1L do begin
       ;  w=where(finite(reform(lats[i,*])),nw)
-      ;  if (nw gt 0) then oplot,lons[i,w],lats[i,w],psym=nw gt 0 ? 0 : 6,color=fsc_color('green')
+      ;  if (nw gt 0) then oplot,lons[i,w],lats[i,w],psym=nw gt 0 ? 0 : 6,color=cgcolor('green')
       ;endfor
       ;for i=0L,sz[2]-1L do begin
       ;  w=where(finite(lats[*,i]),nw)
-      ;  if (nw gt 0) then oplot,lons[w,i],lats[w,i],psym=nw gt 0 ? 0 : 6,color=fsc_color('green')
+      ;  if (nw gt 0) then oplot,lons[w,i],lats[w,i],psym=nw gt 0 ? 0 : 6,color=cgcolor('green')
       ;endfor
       for i=0L,sz[1]-1L do begin
         w=where(finite(reform(lats[i,*])),nw)
         if (nw gt 0) then begin
           xy=map_proj_forward(-lons[i,w],lats[i,w],map_structure=self.mapstructure,polyline=polyline)
           po=pp_connectivity_list(polyline)
-          foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=fsc_color('green')
+          foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=cgcolor('green')
         endif
       endfor
       for i=0L,sz[2]-1L do begin
@@ -182,7 +182,7 @@ if (self.cube && ptr_valid(self.data)) then begin
         if (nw gt 0) then begin
           xy=map_proj_forward(-lons[w,i],lats[w,i],map_structure=self.mapstructure,polyline=polyline)
           po=pp_connectivity_list(polyline)
-          foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=fsc_color('green')
+          foreach ppo,po do oplot,xy[0,ppo],xy[1,ppo],color=cgcolor('green')
         endif
       endfor
     endelse
@@ -201,7 +201,7 @@ if (self.selected_pixels && ptr_valid(self.data)) then begin
   w=where(not (alts0 or alts1 or alts2 or alts3 or alts4))
   lats=lats[w] & lons=lons[w]
   xy=map_proj_forward(lons,lats,map_structure=self.mapstructure)
-  oplot,xy[0,*],xy[1,*],psym=7,color=fsc_color('blue'),thick=2.
+  oplot,xy[0,*],xy[1,*],psym=7,color=cgcolor('blue'),thick=2.
 endif
 if (self.pixel_function && ptr_valid(self.data)) then begin
  ; plot,self.mapstructure.uv_box[[0,2]]*xsz/dim[0],self.mapstructure.uv_box[[1,3]]*ysz/dim[1],/nodata,xstyle=5,ystyle=5,$
@@ -209,7 +209,7 @@ if (self.pixel_function && ptr_valid(self.data)) then begin
   lats=(*self.data)[*].backplanes.lat_0
   lons=(*self.data)[*].backplanes.lon_0
   ;xy=map_proj_forward(lons,lats,map_structure=self.mapstructure)
-  ;oplot,xy[0,*],xy[1,*],psym=7,color=fsc_color('blue'),thick=2.
+  ;oplot,xy[0,*],xy[1,*],psym=7,color=cgcolor('blue'),thick=2.
   eval=*self.eval
   alt0=eval.pixdata.backplanes.alt_0
   alt1=eval.pixdata.backplanes.alt_1
