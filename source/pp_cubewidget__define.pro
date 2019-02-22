@@ -119,10 +119,11 @@ case ename of
     self.geo_label->setproperty,value=val
     if (self.plot && ((event.clicks ne 0) || (event.press ne 0))) then begin
       if ~ptr_valid(self.mask) then begin
-        mask=bytarr(3,xr,yr)
+        mask=bytarr(3,max(xr)-min(xr),max(yr)-min(yr))
       endif else mask=*self.mask
       
       self.cube->getproperty,core=core,struct_backplanes=backplanes
+      yim=y
       newdata={cube:self.cube,pixel:{core:reform(core[x-1,yim,*]),backplanes:backplanes[x-1,yim]}}
       if (event.press eq 4) then begin
         self.spectrum->getproperty,spectrum_data=olddata,nspec=nspec

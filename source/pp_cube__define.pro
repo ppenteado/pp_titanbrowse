@@ -441,7 +441,7 @@ if (all || arg_present(struct_backplanes)) then begin
   if (ptr_valid(self.bnames)) then begin
   nt=n_elements(*self.bnames)
   tmp=create_struct((*self.bnames)[0],0d0)
-  for i=1,nt-1 do tmp=create_struct(tmp,(*self.bnames)[i],0d0)
+  for i=1,nt-1 do tmp=create_struct(tmp,idl_validname((*self.bnames)[i],/convert_all),0d0)
   struct_backplanes=replicate(tmp,self.info.coredims[0],self.info.coredims[1],self.info.suffdims[2])
   for i=0,nt-1 do struct_backplanes[*,*].(i)=(*self.backplanes)[*,*,i]
   endif else struct_backplanes=ptr_new()
