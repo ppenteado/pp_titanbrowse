@@ -9,7 +9,7 @@
 ; 
 ;-
 
-function pp_titanbrowse::init,mdbfiles,vis=vis,cubestoselect=cubes
+function pp_titanbrowse::init,mdbfiles=mdbfiles,vis=vis,cubestoselect=cubes
 compile_opt idl2,logical_predicate
 ret=0
 self.version='201901'
@@ -19,7 +19,7 @@ channel=vis ? 'vis' : 'ir'
 nfiles=n_elements(mdbfiles)
 if nfiles eq 0 then begin
   mdbfiles=file_search('titanbrowse_d_*.sav')
-  mdbfiles=mdbfiles[where(~stregex(mdbfiles,'db.sav$',/boolean),/null)]
+  mdbfiles=mdbfiles[where((~stregex(mdbfiles,'db.sav$',/boolean)) and (strlen(mdbfiles) gt 0),/null)]
   if n_elements(mdbfiles) eq 0 then mdbfiles=file_search('covims_*_'+channel+'.sav',count=nfiles)
   nfiles=n_elements(mdbfiles) 
 endif

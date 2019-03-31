@@ -52,7 +52,7 @@ endif else self.savefile=savefile
 
 idstring='pp_cubecollection_container' ;id to test if savefile was created by this object
 
-catch,error_status
+error_status=0;catch,error_status
 if (error_status ne 0) then begin
   catch,/cancel
   print,'pp_cubecollection::init : Could not read file "',self.savefile,'"'
@@ -87,7 +87,9 @@ endif else begin
     oidstring=idstring
     self.osav->restore,'idstring'
     if (idstring[0] ne oidstring) then message,'Not a pp_cubecollection savefile'
-    self.osav->restore,['ncubes','cubefiles','heapinds','class']
+    self.osav->restore,['ncubes','cubefiles','heapinds']
+    snames=self.osav.names()
+    if total(strmatch(snames,'CLASS')) then self.osav.restore,['class'] else class='pp_editablecube'
 ;Make a dummy editablecube object just to make sure its methods get compiled
     self.class=class
     a=obj_new(class,file='')

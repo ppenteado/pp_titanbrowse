@@ -41,7 +41,7 @@ compile_opt idl2,hidden
 
 ret=0
 ;If file is provided, read the cube with the methods inherited from readcube
-if (n_elements(file) eq 1) then ret=self->pp_nhcube::init(file,special=special,_strict_extra=ex) else begin
+if (n_elements(file) eq 1) then ret=self->pp_cube::init(file,special=special,_strict_extra=ex) else begin
 ;If a readcube/editablecube object is provided, make a copy of its data
   orcube->getproperty,all=all
   self.file=all.file
