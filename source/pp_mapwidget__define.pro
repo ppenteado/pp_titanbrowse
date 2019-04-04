@@ -36,7 +36,7 @@ void=obj_new('buttonwidget',row2col1,value='Export to bitmap file',name=basename
 row2col1_checkbox=obj_new('basewidget',row2col1,/nonexclusive)
 void=obj_new('buttonwidget',row2col1_checkbox,value='Draw only pixels on surface',name=basename+'_surface_only')
 ;Map control widgets
-mapcont=obj_new('basewidget',row2,/base_align_top,frame=1,title='Map controls',row=3)
+mapcont=obj_new('basewidget',row2,/base_align_top,frame=1,title='Map controls',row=5)
 proj=obj_new('droplistwidget',mapcont,value=*self.projs,title='Projection:',name=basename+'_projection',index=self.proj)
 ;row3=obj_new('basewidget',self,row=1,/base_align_top,)
 status=obj_new('statusbar',parent=self,percent=100,/align_left)
@@ -71,6 +71,8 @@ row3=obj_new('basewidget',mapcont,row=1)
 lat=obj_new('sliderwidget',row3,maximum=90.0,minimum=-90.0,title='Center latitude',name=basename+'_latitude',value=self.lat)
 lon=obj_new('sliderwidget',row3,maximum=180.0,minimum=-180.0,title='Center longitude',name=basename+'_longitude',value=self.lon)
 height=obj_new('fieldwidget',row3,value=self.height,title='Height:',name=basename+'_height',/cr_events)
+zoom=obj_new('sliderwidget',row3,maximum=10,minimum=0,title='Zoom',name=basename+'_zoom',value=self.zoom)
+self.limit=[-90d0,-180d0,90d0,180d0]
 row4=obj_new('basewidget',mapcont,row=1)
 minim=obj_new('sliderwidget',row4,maximum=100.0,minimum=0.0,title='Imagem minimum',name=basename+'_minim',value=self.minim)
 maxim=obj_new('sliderwidget',row4,maximum=100.0,minimum=0.0,title='Image maximum',name=basename+'_maxim',value=self.maxim)
@@ -97,7 +99,34 @@ self.mapstructure=self.coord->setmapprojection((*self.proj_inds)[self.proj],cent
  center_longitude=self.lon,height=h,semimajor=5d6,semiminor=5d6,/relaxed)
 uvbox=self.mapstructure.uv_box
 aspect=(uvbox[3]-uvbox[1])/(uvbox[2]-uvbox[0])
-self.coord->setproperty,xrange=uvbox[[0,2]],yrange=uvbox[[1,3]]
+if self.zoom then begin
+  xr=uvbox[[0,2]]
+  yr=uvbox[[1,3]]
+  xm=mean(xr)
+  ym=mean(yr)
+  nxr=xm+[-1d0,1d0]*(xr[1]-xm)*1d0/self.zoom
+  nyr=ym+[-1d0,1d0]*(yr[1]-xm)*1d0/self.zoom
+  ;self.coord.draw
+  self.coord->setproperty,xrange=nxr,yrange=nyr
+  ;self.coord.draw
+  self.mapstructure.uv_box=[nxr[0],nyr[0],nxr[1],nyr[1]]
+  if self.proj eq 0 then begin
+   lonl=self.lon+[-1d0,1d0]*180d0/self.zoom
+   latl=self.lat+[-1d0,1d0]*90d0/self.zoom 
+   llimit=[latl[0],lonl[0],latl[1],lonl[1]]
+   self.limit=llimit
+   self.coord.setproperty,limit=llimit
+   self.mapstructure=self.coord->setmapprojection((*self.proj_inds)[self.proj],center_latitude=self.lat,$
+    center_longitude=self.lon,height=h,semimajor=5d6,semiminor=5d6,/relaxed,xrange=nxr,yrange=nyr,limit=llimit)
+   
+  endif
+;  self.mapstructure=self.coord->setmapprojection((*self.proj_inds)[self.proj],center_latitude=self.lat,$
+;    center_longitude=self.lon,height=h,semimajor=5d6,semiminor=5d6,/relaxed,xrange=nxr,yrange=nyr)
+  uvbox=self.mapstructure.uv_box
+  aspect=(uvbox[3]-uvbox[1])/(uvbox[2]-uvbox[0])
+endif else begin
+  self.coord->setproperty,xrange=uvbox[[0,2]],yrange=uvbox[[1,3]]
+endelse
 self.draw.getproperty,geo=geo
 ;xsz=400 & ysz=400
 xsz=geo.xsize & ysz=geo.ysize
@@ -109,8 +138,10 @@ if (self.bmap ne 0) && ((~self.pixel_function) || self.precision) then begin
     if self.callgibs || ~ptr_valid((*self.maps)[self.bmap].image) then begin
       widget_control,/hourglass
       if ~obj_valid(self.wmts) then self.wmts=pp_wmts()
-      image=self.wmts.getcimage(layer=self.gibslayer,time=self.gibsdate)
+      bbi=self.limit[[1,0,3,2]]
+      image=self.wmts.getcimage(bbi,layer=self.gibslayer,time=self.gibsdate)
       (*self.maps)[self.bmap].image=ptr_new(image)
+      (*self.maps)[self.bmap].range=bbi
     endif
   endif
     image=(*((*self.maps)[self.bmap]).image)
@@ -367,6 +398,10 @@ case ename of
   end
   basename+'_longitude' : self.lon=event.value
   basename+'_latitude' : self.lat=event.value
+  basename+'_zoom' : begin
+    self.zoom=event.value
+    self.callgibs=1
+  end
   basename+'_minim' : self.minim=event.value
   basename+'_maxim' : self.maxim=event.value
   basename+'_height' : if (*event.value gt 1d-3) then self.height=(*event.value) else begin
@@ -425,6 +460,7 @@ void={pp_mapwidget,inherits basewidget,draw:obj_new(),data:ptr_new(),cube:0B,$
  mode:obj_new(),maps:ptr_new(),precision:0B,cubedata:obj_new(),dbobject:obj_new(),surfaceonly:0B,$}
  eval:ptr_new(),pvals:ptr_new(),minim:0d0,maxim:100d0,dragstart:[0L,0L],dragend:[0L,0L],$
  latslider:obj_new(),lonslider:obj_new(),cubesdata:ptr_new(),status:obj_new(),$
- gibslayer:'',gibsdate:'',wmts:obj_new(),callgibs:0,gibslayers:ptr_new()}
+ gibslayer:'',gibsdate:'',wmts:obj_new(),callgibs:0,gibslayers:ptr_new(),$
+ zoom:0,limit:dblarr(4)}
  
 end
