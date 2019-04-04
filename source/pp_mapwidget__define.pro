@@ -48,7 +48,7 @@ smaps=replicate({title:'',range:[-180d0,-90d0,180d0,90d0],image:ptr_new()},nmaps
 smaps.title=maps
 ;for i=0,nmaps-1 do if (maps[i].file ne '') then mapimages[i]=ptr_new(read_image(maps[i].file))
 ;self.mapimages=ptr_new(mapimages,/no_copy)
-for i=0,nmaps-1 do if (maps[i] ne 'none') then begin ;Get the map metadata from the tiff file
+for i=0,nmaps-1 do if ((maps[i] ne 'none') && (maps[i] ne 'GIBS')) then begin ;Get the map metadata from the tiff file
   void=query_tiff(maps[i],geotiff=geo,info)
   smaps[i].title=info.description
   latmax=max(geo.modeltiepointtag[4,*],min=latmin)
@@ -56,8 +56,17 @@ for i=0,nmaps-1 do if (maps[i] ne 'none') then begin ;Get the map metadata from 
   smaps[i].range=[lonmin,latmin,lonmax,latmax]
   smaps[i].image=ptr_new(read_tiff(maps[i]))
 endif
+for i=0,nmaps-1 do if (maps[i] eq 'GIBS') then smaps[i].title='GIBS'
+self.wmts=pp_wmts(/verbose)
+self.gibslayers=ptr_new((self.wmts.layers.keys()).toarray())
 
 background=obj_new('droplistwidget',mapcont,value=smaps.title,title='Background:',name=basename+'_background',index=self.bmap)
+self.gibslayer='BlueMarble_ShadedRelief_Bathymetry'
+today=systime(/julian)
+caldat,today-2,m,d,y
+self.gibsdate=string(y,m,d,format='(I04,"-",I02,"-",I02)')
+gibs_layer=obj_new('fieldwidget',mapcont,value=self.gibslayer,title='GIBS Layer:',name=basename+'_gibslayer',/cr_events)
+gibs_date=obj_new('fieldwidget',mapcont,value=self.gibsdate,title='GIBS Date:',name=basename+'_gibsdate',/cr_events)
 row3=obj_new('basewidget',mapcont,row=1)
 lat=obj_new('sliderwidget',row3,maximum=90.0,minimum=-90.0,title='Center latitude',name=basename+'_latitude',value=self.lat)
 lon=obj_new('sliderwidget',row3,maximum=180.0,minimum=-180.0,title='Center longitude',name=basename+'_longitude',value=self.lon)
@@ -95,7 +104,17 @@ xsz=geo.xsize & ysz=geo.ysize
 dim=(*self.iso)[self.proj] ? [xsz<ysz,ysz<xsz] : [xsz<(2d0*ysz),ysz<(xsz/2d0)]
 if (self.bmap ne 0) && ((~self.pixel_function) || self.precision) then begin
   dim=(*self.iso)[self.proj] ? [xsz<ysz,ysz<xsz] : [xsz<(2d0*ysz),ysz<(xsz/2d0)]
-  image=(*((*self.maps)[self.bmap]).image)
+  title=((*self.maps)[self.bmap]).title
+  if title eq 'GIBS' then begin
+    if self.callgibs || ~ptr_valid((*self.maps)[self.bmap].image) then begin
+      widget_control,/hourglass
+      if ~obj_valid(self.wmts) then self.wmts=pp_wmts()
+      image=self.wmts.getcimage(layer=self.gibslayer,time=self.gibsdate)
+      (*self.maps)[self.bmap].image=ptr_new(image)
+    endif
+  endif
+    image=(*((*self.maps)[self.bmap]).image)
+  
   sz=size(image,/n_dimensions)
   if (sz eq 2) then self.background=ptr_new(map_proj_image(image,$
    ((*self.maps)[self.bmap]).range,map_structure=self.mapstructure,dimensions=dim)) $
@@ -265,6 +284,7 @@ pro pp_mapwidget::eventhandler,event
 compile_opt idl2,hidden,logical_predicate
 ename=strlowcase(event.name)
 self->getproperty,name=basename
+self.callgibs=0
 case ename of
   basename+'_drawwidget' : begin
     if event.press then begin
@@ -317,6 +337,20 @@ case ename of
   end
   basename+'_projection' : self.proj=event.index
   basename+'_background' : self.bmap=event.index
+  basename+'_gibslayer': begin
+    layers=*self.gibslayers
+    layer=layers[where(strmatch(layers,'*'+*event.value+'*',/fold_case),/null)]
+    if n_elements(layer) then begin
+      self.callgibs=1
+      layer=layer[0]
+      self.gibslayer=layer
+      event.id.setproperty,value=layer
+    endif
+  end
+  basename+'_gibsdate': begin
+    self.gibsdate=*event.value
+    self.callgibs=1
+  end
   basename+'_precision' : self.precision=event.index
   basename+'_mode' : begin 
     self.cube=event.index eq 0
@@ -390,6 +424,7 @@ void={pp_mapwidget,inherits basewidget,draw:obj_new(),data:ptr_new(),cube:0B,$
  clean:0B,iso:ptr_new(),coord:obj_new(),grid:obj_new(),proj_inds:ptr_new(),height:0.,$
  mode:obj_new(),maps:ptr_new(),precision:0B,cubedata:obj_new(),dbobject:obj_new(),surfaceonly:0B,$}
  eval:ptr_new(),pvals:ptr_new(),minim:0d0,maxim:100d0,dragstart:[0L,0L],dragend:[0L,0L],$
- latslider:obj_new(),lonslider:obj_new(),cubesdata:ptr_new(),status:obj_new()}
+ latslider:obj_new(),lonslider:obj_new(),cubesdata:ptr_new(),status:obj_new(),$
+ gibslayer:'',gibsdate:'',wmts:obj_new(),callgibs:0,gibslayers:ptr_new()}
  
 end
