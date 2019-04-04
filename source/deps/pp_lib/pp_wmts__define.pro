@@ -273,7 +273,7 @@ if isa(cmap,'hash')||isa(cmap,'list') then begin
       val=(fix(e['ref']))
       rgb=byte(fix(strsplit(e['rgb'],', ',/extract)))
       alpha=strmatch(e['transparent'],'*true*',/fold_case) ? 0B : 255B
-      print,e,/impl
+      ;print,e,/impl
       if e.haskey('value') then begin
         value=strsplit(e['value'],/extract,'[]()')
         foreach val,value do begin
@@ -357,7 +357,7 @@ if havecmap && (size(ti,/n_dim) eq 2) then begin
   l=pp_locate(imc)
   iv=0
   foreach ll,l,v do begin
-    print,v,iv++
+    ;print,v,iv++
     if cmaph.haskey(v) then for ic=0,3 do iim[ll*4+ic]=cmaph[v,ic]
   endforeach
   
