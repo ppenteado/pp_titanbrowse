@@ -57,7 +57,7 @@ for i=0,nmaps-1 do if ((maps[i] ne 'none') && (maps[i] ne 'GIBS')) then begin ;G
   smaps[i].image=ptr_new(read_tiff(maps[i]))
 endif
 for i=0,nmaps-1 do if (maps[i] eq 'GIBS') then smaps[i].title='GIBS'
-self.wmts=pp_wmts(/verbose)
+self.wmts=pp_wmts()
 self.gibslayers=ptr_new((self.wmts.layers.keys()).toarray())
 
 background=obj_new('droplistwidget',mapcont,value=smaps.title,title='Background:',name=basename+'_background',index=self.bmap)
@@ -373,6 +373,7 @@ case ename of
     layer=layers[where(strmatch(layers,'*'+*event.value+'*',/fold_case),/null)]
     if n_elements(layer) then begin
       self.callgibs=1
+      print,layer,format='(A)'
       layer=layer[0]
       self.gibslayer=layer
       event.id.setproperty,value=layer
