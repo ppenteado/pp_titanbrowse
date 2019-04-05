@@ -22,9 +22,9 @@ coord->setproperty,xrange=map.uv_box[[0,2]],yrange=map.uv_box[[1,3]]
 coord->getproperty,map_structure=map
 self.mapstructure=map
 grid=obj_new('map_grid',map_object=coord,color='red',thick=2.)
-draw=obj_new('drawwidget',self,xsize=geo.xsize-20,ysize=geo.ysize-250,coord_object=coord,/button_events,$
+draw=obj_new('drawwidget',self,xsize=geo.xsize-20,ysize=geo.ysize-320,coord_object=coord,/button_events,$
   /motion_events,name=basename+'_drawwidget')
-image=obj_new('catimage',bytarr(10,10),xsize=geo.xsize,ysize=geo.ysize-250,/keep_aspect,display=1);,sclmin=0B,sclmax=255B,bottom=0B,scaletype=0)
+image=obj_new('catimage',bytarr(10,10),xsize=geo.xsize,ysize=geo.ysize-320,/keep_aspect,display=1);,sclmin=0B,sclmax=255B,bottom=0B,scaletype=0)
 draw->add,image,position=0,/use_coords
 draw->add,grid,position=1
 row2=obj_new('basewidget',self,row=1,/base_align_top)
