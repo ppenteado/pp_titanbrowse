@@ -41,7 +41,7 @@ compile_opt idl2,hidden
 
 ret=0
 ;If file is provided, read the cube with the methods inherited from readcube
-if (n_elements(file) eq 1) then ret=self->pp_cube::init(file,special=special,_strict_extra=ex) else begin
+if (n_elements(file) eq 1) then ret=self->pp_readcube::init(file,special=special,_strict_extra=ex) else begin
 ;If a readcube/editablecube object is provided, make a copy of its data
   orcube->getproperty,all=all
   self.file=all.file
@@ -549,7 +549,7 @@ end
 pro pp_editablecube::cleanup
 compile_opt idl2,hidden
 ptr_free,self.oldlabels,self.oldhistory
-self->pp_cube::cleanup
+self->pp_readcube::cleanup
 end
 
 
@@ -618,7 +618,7 @@ end
 ; :Author: Paulo Penteado (pp.penteado@gmail.com), Oct/2009
 ;-
 pro pp_editablecube__define
- void={pp_editablecube,inherits pp_cube,newfile:'',$
+ void={pp_editablecube,inherits pp_readcube,newfile:'',$
   oldlabels:ptr_new(),oldhistory:ptr_new(),$
   llength:0L,oldllength:0L,hlength:0L,oldhlength:0L,$
   binlength:0LL,oldbinlength:0LL,preservespecial:0}
